@@ -2,12 +2,13 @@ import express from 'express'
 import jwt from 'jsonwebtoken'
 
 import {
+  generateAppSecretProof,
+  getUserLongLivedAccessToken,
   getAppAccessToken,
   debugToken,
   getPagesBasedOnToken,
   postPageOnToken,
   openLiveVideo,
-  getUserLongLivedAccessToken,
 } from '../services/fb.js'
 
 import User from '../Models/User.js'
@@ -82,13 +83,18 @@ router.post('/fb-sdk', async (req, res) => {
 
   const userAccessToken = await getUserLongLivedAccessToken(req.query.token)
   const appAccessToken = await getAppAccessToken()
+
+  // Generate appsecret_proof
+  const appSecretProof = generateAppSecretProof(userAccessToken)
+  console.log('App Secret Proof:', appSecretProof)
+
   const scopes = await debugToken(appAccessToken, userAccessToken)
   const pages = await getPagesBasedOnToken(userAccessToken)
 
   let user = await User.findOneAndUpdate(
     { username: form.id },
-    { $set: { ...userData, userAccessToken, pages } }, // อัปเดตข้อมูลผู้ใช้รวมถึง access token และ pages
-    { new: true, useFindAndModify: false, upsert: true } // ใช้ upsert เพื่อสร้างใหม่ถ้าไม่มี
+    { $set: { ...userData, userAccessToken, pages } },
+    { new: true, useFindAndModify: false, upsert: true }
   )
 
   let payload = {
@@ -105,7 +111,8 @@ router.post('/fb-sdk', async (req, res) => {
       res.json({ token, payload })
     }
   )
-})
+});
+
 
 /**
  * @swagger

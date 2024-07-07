@@ -1,4 +1,5 @@
 import 'dotenv/config'
+import crypto from 'crypto'
 
 const APP_ID = process.env.APP_ID
 const APP_SECRET = process.env.APP_SECRET
@@ -151,4 +152,11 @@ export const openLiveVideo = async (me, title, description, accessToken) => {
   } catch (error) {
     throw error
   }
+}
+
+// ฟังก์ชันสำหรับสร้าง appsecret_proof
+export function generateAppSecretProof(userAccessToken) {
+  const hmac = crypto.createHmac('sha256', APP_SECRET)
+  hmac.update(userAccessToken)
+  return hmac.digest('hex')
 }
