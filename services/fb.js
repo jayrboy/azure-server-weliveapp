@@ -34,7 +34,7 @@ export const getAppAccessToken = async () => {
     throw new Error('App access token failed')
   }
 
-  return data.access_token
+  return data.access_token //422988337380571|Wwmtig1WYSo0Ij9wkoxD9MB0kVc
 }
 
 //? https://developers.facebook.com/docs/graph-api/reference/v20.0/debug_token

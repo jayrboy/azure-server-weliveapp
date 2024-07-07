@@ -2,7 +2,7 @@ import mongoose from 'mongoose'
 
 let userSchema = mongoose.Schema(
   {
-    username: { type: String, required: true },
+    username: { type: String, required: true }, // USER-ID
     password: String,
     role: { type: String, default: 'user' },
     name: String,
@@ -11,6 +11,8 @@ let userSchema = mongoose.Schema(
       type: Array,
       default: [{ data: { url: 'no-image.jpg' } }],
     },
+    userAccessToken: String,
+    pages: { type: Array, default: [] }, // ฟิลด์สำหรับเก็บข้อมูลเพจ
   },
   { timestamps: true }
 )

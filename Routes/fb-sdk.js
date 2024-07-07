@@ -20,32 +20,56 @@ const router = express.Router()
 /**
  * @swagger
  * /api/fb-sdk:
- *   get:
+ *   post:
  *     tags: [Facebook SDK]
- *     summary: Facebook Graph API
- *     parameters:
- *       - in: query
- *         name: token
- *         type: string
- *         required: true
- *         default: EAAGAtKWXZCNsBO2Uh4xNdZBapFDKpbVvygaujozMw7qBuzukg4c56LzEANaQhZBIRU6KTWShdLPjzqzgbruVf3FZBrV5tqSxSzBD540U1DDZBPMdxU0ZBlEj8L1CIB5IZAhMfJZAhjGbCv690L7XdQ7A9ZCDKUYAAitLR4q3HmNZCOgJDvvgCAXqZAfAArZAORVNtSSwqAaUvI92JFWN9zAO9oAPvPte5c8ZD
- *         description: The access token to debug and get pages
+ *     summary: Handle Facebook login and fetch user data
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               id:
+ *                 type: string
+ *                 description: Facebook user ID
+ *               name:
+ *                 type: string
+ *                 description: User's name
+ *               picture:
+ *                 type: object
+ *                 properties:
+ *                   data:
+ *                     type: object
+ *                     properties:
+ *                       url:
+ *                         type: string
+ *                         description: URL of the user's profile picture
+ *               email:
+ *                 type: string
+ *                 description: User's email
  *     responses:
  *       200:
- *         description: Success
+ *         description: Successful operation
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 scopes:
- *                   type: array
- *                   items:
- *                     type: string
- *                     example: "public_profile,pages_read_engagement,pages_manage_posts"
- *                 accessToken:
+ *                 token:
  *                   type: string
- *                   example: "EAAGAtKWXZCNsBO8iIiKAmTq3TtwyfzZBNWvMOxs7wLDfywmUNCAh3HjRMH5T9ZCI9ZBLAO8Dfbv8cdgL1bFg79ex4ndU7MwI9wUlkFlrLmxF1ZAxXunZCb1Tq9atd6fdahu6fVZBE1TNEPfDiEo2RW0cSLoHRu5zZCuKo3mxVpsiD1KrxYhkOVQLNcMvFg8McZBvqNXZA4aMZAQzLWXvnE7DrShkyIaxZASCWYvhFgZDZD"
+ *                   description: JWT token
+ *                 payload:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       type: object
+ *                       description: User object
+ *                     scopes:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                       description: List of user scopes
  */
 router.post('/fb-sdk', async (req, res) => {
   let form = req.body
@@ -56,38 +80,22 @@ router.post('/fb-sdk', async (req, res) => {
     email: req.body.email,
   }
 
-  let user = await User.findOneAndUpdate(
-    { username: form.id },
-    { useFindAndModify: false }
-  )
-  if (user) {
-    console.log('User updated')
-  } else {
-    console.log('New a User saved:')
-    user = new User(userData)
-    await user.save()
-  }
-
-  const appAccessToken = await getAppAccessToken() //422988337380571|Wwmtig1WYSo0Ij9wkoxD9MB0kVc
-  console.log('App Access Token :', appAccessToken)
-
   const userAccessToken = await getUserLongLivedAccessToken(req.query.token)
-
+  const appAccessToken = await getAppAccessToken()
   const scopes = await debugToken(appAccessToken, userAccessToken)
-
   const pages = await getPagesBasedOnToken(userAccessToken)
 
-  // console.log(scopes)
+  let user = await User.findOneAndUpdate(
+    { username: form.id },
+    { $set: { ...userData, userAccessToken, pages } }, // อัปเดตข้อมูลผู้ใช้รวมถึง access token และ pages
+    { new: true, useFindAndModify: false, upsert: true } // ใช้ upsert เพื่อสร้างใหม่ถ้าไม่มี
+  )
 
   let payload = {
     user,
-    userAccessToken: userAccessToken,
-    pages: pages,
-    // accessToken: pages?.[0].access_token,
     scopes,
   }
 
-  // generate toke
   jwt.sign(
     payload,
     process.env.JWT_SECRET,
