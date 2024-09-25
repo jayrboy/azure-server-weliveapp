@@ -48,7 +48,7 @@ export const create = async (req, res) => {
     if (existingOrder) {
       await Order.findOneAndUpdate(
         { idFb: existingOrder.idFb },
-        { $push: { orders: existingOrder.orders[0] } },
+        { $push: { orders: data.orders[0] } },
         { useFindAndModify: false }
       )
 
