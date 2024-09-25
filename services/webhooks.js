@@ -1,6 +1,7 @@
 import 'dotenv/config'
 import express from 'express'
 import axios from 'axios'
+import Order from '../Models/Order.js'
 
 const router = express.Router()
 
@@ -9,20 +10,16 @@ const WEBHOOKS_VERIFY_TOKEN = process.env.WEBHOOKS_VERIFY_TOKEN || 'message001'
 const PAGE_ACCESS_TOKEN = process.env.PAGE_ACCESS_TOKEN
 let received_updates = []
 
-//! Meta เปิด Mode: Live Preview สำหรับ Test
-/*-------------- http://localhost:8000/webhooks --------------*/
-
 router.get('/', (req, res) => {
   res
     .status(200)
     .send('<pre>' + JSON.stringify(received_updates, null, 2) + '</pre>')
 })
 
-//? http://localhost:8000/webhooks/chatbot
+//! Meta เปิด Mode: Live Preview สำหรับ Test
 
-// GET Webhooks Chatbot
-http: router.get('/chatbot', (req, res) => {
-  // Parse the query params
+// GET: /api/webhooks/chatbot
+router.get('/chatbot', (req, res) => {
   let mode = req.query['hub.mode']
   let verifyToken = req.query['hub.verify_token']
   let challenge = req.query['hub.challenge']
@@ -36,8 +33,9 @@ http: router.get('/chatbot', (req, res) => {
     res.sendStatus(403)
   }
 })
-// POST Webhooks Chatbot
-router.post('/chatbot', async (req, res) => {
+
+// POST: /api/webhooks/chatbot
+router.post('/chatbot', (req, res) => {
   let form = req.body
 
   if (form.object === 'page') {
@@ -48,12 +46,8 @@ router.post('/chatbot', async (req, res) => {
 
       // Get the sender PSID
       let sender_psid = webhook_event.sender.id
-      console.log(sender_psid)
+      console.log('PSID: ', sender_psid)
 
-      /*  
-        Check if the event is a message or postback and
-        pass the event to thr appropriate handler function
-      */
       if (webhook_event.message) {
         handleMessage(sender_psid, webhook_event.message)
       } else if (webhook_event.postback) {
@@ -66,62 +60,83 @@ router.post('/chatbot', async (req, res) => {
   }
 })
 
-// Handle Message Events
+//TODO: Handle Message Events
 async function handleMessage(sender_psid, received_message) {
   let response
 
-  if (received_message.text) {
-    if (
-      received_message.text.includes('ออเดอร์') ||
-      received_message.text.toLowerCase().includes('order')
-    ) {
-      let orderId = '666fae8fd4f0cde928d4ecfa' // Replace with actual order ID or logic to fetch it
-      let orderUrl = `https://weliveapp.netlify.app/order/${orderId}`
+  try {
+    // ดึงชื่อผู้ใช้จาก PSID
+    const userProfile = await getUserProfileName(sender_psid)
 
-      response = {
-        text: `นี่คือลิงก์ออเดอร์ของคุณ: ${orderUrl}`,
-      }
-    } else {
-      response = {
-        text: `คุณส่งข้อความ "${received_message.text}" มา กรุณาส่งรูปภาพสินค้าที่ต้องการ หรือพิมพ์ "order" เพื่อดูคำสั่งซื้อของคุณลูกค้า`,
+    // ค้นหาออเดอร์ของผู้ใช้ใน MongoDB
+    const order = await Order.findOne({ name: userProfile.name }).exec()
+
+    // กรณีที่ผู้ใช้ส่งข้อความปกติ
+    if (received_message.text) {
+      if (order) {
+        response = {
+          text: `สวัสดีคุณ ${order.name} คุณมีคำสั่งซื้อ. หากต้องการรายละเอียดเพิ่มเติมกรุณาเข้าลิงก์: https://weliveapp.netlify.app/order/${order._id}`,
+        }
+      } else {
+        response = {
+          text: `ไม่พบคำสั่งซื้อสำหรับคุณ ${userProfile.name} รอติดตามการถ่ายทอดสดขายสินค้าและสั่งสินค้าอีกครั้ง`,
+        }
       }
     }
-  } else if (received_message.attachments) {
-    // Get the URL of the message attachment
-    let attachment_url = received_message.attachments[0].payload.url
+    // กรณีที่ผู้ใช้ส่งรูปภาพ
+    else if (received_message.attachments) {
+      // Get the URL of the message attachment
+      let attachment_url = received_message.attachments[0].payload.url
 
-    // Respond with a generic template asking for confirmation
-    response = {
-      attachment: {
-        type: 'template',
-        payload: {
-          template_type: 'generic',
-          elements: [
-            {
-              title: 'นี่คือสินค้าที่ต้องการใช่หรือไม่?',
-              subtitle: 'กดปุ่มเพื่อตอบคำถาม',
-              image_url: attachment_url,
-              buttons: [
+      if (order) {
+        // Respond with a generic template showing the order URL and asking for confirmation
+        response = {
+          attachment: {
+            type: 'template',
+            payload: {
+              template_type: 'generic',
+              elements: [
                 {
-                  type: 'postback',
-                  title: 'ใช่!',
-                  payload: 'yes',
-                },
-                {
-                  type: 'postback',
-                  title: 'ไม่!',
-                  payload: 'no',
+                  title: `คุณ ${order.name} มีคำสั่งซื้อ`,
+                  subtitle: `คลิกลิงก์เพื่อตรวจสอบคำสั่งซื้อเพิ่มเติม`,
+                  image_url: attachment_url, // รูปภาพที่ผู้ใช้ส่งมา
+                  buttons: [
+                    {
+                      type: 'web_url',
+                      url: `https://weliveapp.netlify.app/order/${order._id}`,
+                      title: 'ดูรายละเอียดคำสั่งซื้อ',
+                    },
+                    {
+                      type: 'postback',
+                      title: 'ใช่! นี่คือสินค้าที่ต้องการ',
+                      payload: 'yes',
+                    },
+                    {
+                      type: 'postback',
+                      title: 'ไม่! สินค้านี้ไม่ถูกต้อง',
+                      payload: 'no',
+                    },
+                  ],
                 },
               ],
             },
-          ],
-        },
-      },
+          },
+        }
+      } else {
+        response = {
+          text: `ไม่พบคำสั่งซื้อในระบบสำหรับชื่อ "${userProfile.name}".`,
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error handling message:', error) // เพิ่มการ log ข้อผิดพลาด
+    response = {
+      text: 'ขออภัย เกิดข้อผิดพลาดในการดึงข้อมูลคำสั่งซื้อของคุณ กรุณาลองใหม่อีกครั้ง',
     }
   }
 
-  // Send the response message
-  await callSendAPI(sender_psid, response)
+  // ส่งข้อความ response กลับไปยังผู้ใช้
+  await callSendAPI(sender_psid, response) // ใช้ await เพื่อรอการส่ง API สำเร็จ
 }
 
 // Handle "messaging_postback" Events
@@ -145,8 +160,8 @@ function handlePostBack(sender_psid, received_postback) {
   callSendAPI(sender_psid, response)
 }
 
-// Send Response Message via the Send API
-export async function callSendAPI(sender_psid, response) {
+// ส่งข้อความไปยัง Messenger API
+async function callSendAPI(sender_psid, response) {
   // Construct the message body
   let request_body = {
     recipient: {
@@ -154,10 +169,11 @@ export async function callSendAPI(sender_psid, response) {
     },
     message: response,
   }
+
   // Send the HTTP request to the Messenger Platform
   try {
     await axios.post(
-      'https://graph.facebook.com/v20.0/me/messages',
+      'https://graph.facebook.com/v19.0/me/messages',
       request_body,
       {
         params: {
@@ -168,6 +184,19 @@ export async function callSendAPI(sender_psid, response) {
     console.log('Message sent!')
   } catch (error) {
     console.log('Unable to send message')
+  }
+}
+
+// ดึงข้อมูลผู้ใช้จาก Graph API
+async function getUserProfileName(psid) {
+  try {
+    let response = await axios.get(
+      `https://graph.facebook.com/${psid}?fields=id,name&access_token=${PAGE_ACCESS_TOKEN}`
+    )
+    return response.data
+  } catch (error) {
+    console.error('Error fetching user profile:', error)
+    throw new Error('Unable to fetch user profile')
   }
 }
 
