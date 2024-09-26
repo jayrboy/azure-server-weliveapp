@@ -1,9 +1,16 @@
 import express from 'express'
-
+import {
+  getAll,
+  getById,
+  updateById,
+} from '../Controllers/customer-controller.js'
 const router = express.Router()
 
-router.get('/customer', (req, res) => {})
-router.get('/customer/read/:id', (req, res) => {})
+router.get('/customer', getAll)
+
+router.get('/customer/:id', getById)
+
+router.put('/customer', updateById)
 
 export default router
 
