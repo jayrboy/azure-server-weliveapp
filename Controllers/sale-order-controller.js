@@ -261,7 +261,7 @@ export const getById = (req, res) => {
 }
 
 export const update = async (req, res) => {
-  console.log(req.body)
+  // console.log(req.body)
   try {
     let form = req.body
 
@@ -278,6 +278,30 @@ export const update = async (req, res) => {
 
     console.log('Document updated sale order')
     res.json(updatedOrder)
+  } catch (err) {
+    console.error('Error updating order: ', err)
+    res.status(400).json({ error: 'เกิดข้อผิดพลาดในการอัปเดตข้อมูล Order' })
+  }
+}
+
+export const update2 = async (req, res) => {
+  try {
+    let form = req.body
+    // console.log(form) // ตรวจสอบข้อมูลที่ได้รับจาก form-data ที่ผ่าน multiple/data
+
+    if (req.file) {
+      form.picture_payment = req.file.filename
+    }
+
+    // อัปเดตข้อมูล products ภายใน Order
+    let updatedOrder = await Order.findByIdAndUpdate(form._id, form, {
+      useFindAndModify: false,
+    })
+
+    let orderExisting = await Order.findById(updatedOrder._id).exec()
+    console.log('Document updated sale order')
+
+    res.json(orderExisting)
   } catch (err) {
     console.error('Error updating order: ', err)
     res.status(400).json({ error: 'เกิดข้อผิดพลาดในการอัปเดตข้อมูล Order' })

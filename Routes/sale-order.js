@@ -5,6 +5,7 @@ import {
   getAll,
   getById,
   update,
+  update2,
   remove,
   paid,
   getOrderForReport,
@@ -128,6 +129,8 @@ router.get('/sale-order/read/:id', getById)
  *          description: Unauthorized
  */
 router.put('/sale-order', upload.single('picture_payment'), update)
+
+router.put('/sale-order2', upload.single('picture_payment'), update2)
 
 /**
  * @swagger
@@ -356,6 +359,7 @@ router.get(
   '/sale-order/getorderforreport/:id/:date/:month/:year',
   getOrderForReport
 )
+
 /**
  * @swagger
  * /api/sale-order/getorderforreport/{id}/{date}/{month}/{year}:
