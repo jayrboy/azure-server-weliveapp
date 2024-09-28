@@ -35,6 +35,7 @@ export const create = async (req, res) => {
       district: form.district || '',
       postcode: form.postcode || 0,
       tel: form.tel || 0,
+      isPayment: form.isPayment || false,
       complete: form.complete || false,
       sended: form.sended || false,
       express: form.express || '',

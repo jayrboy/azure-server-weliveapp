@@ -15,6 +15,7 @@ let orderSchema = new mongoose.Schema(
     postcode: String,
     tel: String,
     date_added: Date,
+    isPayment: Boolean,
     complete: Boolean,
     sended: Boolean,
     express: String,
