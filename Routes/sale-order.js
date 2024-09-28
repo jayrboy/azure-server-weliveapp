@@ -5,7 +5,7 @@ import {
   getAll,
   getById,
   update,
-  update2,
+  updated,
   remove,
   paid,
   getOrderForReport,
@@ -130,7 +130,7 @@ router.get('/sale-order/read/:id', getById)
  */
 router.put('/sale-order', upload.single('picture_payment'), update)
 
-router.put('/sale-order2', upload.single('picture_payment'), update2)
+router.put('/sale-order/j', upload.single('picture_payment'), updated)
 
 /**
  * @swagger

@@ -284,7 +284,7 @@ export const update = async (req, res) => {
   }
 }
 
-export const update2 = async (req, res) => {
+export const updated = async (req, res) => {
   try {
     let form = req.body
     // console.log(form) // ตรวจสอบข้อมูลที่ได้รับจาก form-data ที่ผ่าน multiple/data
