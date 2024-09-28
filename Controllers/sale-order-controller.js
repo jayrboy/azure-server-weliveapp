@@ -70,9 +70,8 @@ export const create = async (req, res) => {
 }
 
 export const getAll = (req, res) => {
-  // Order.find({ complete: false }) // กรองข้อมูลเฉพาะที่ complete เป็น false
-  Order.find({}) // กรองข้อมูลเฉพาะที่ complete เป็น false
-    .sort({ date_added: -1 }) // เรียงข้อมูลตามวันที่เพิ่มข้อมูลล่าสุดก่อน
+  Order.find({ sended: false }) // กรองข้อมูลเฉพาะที่ sended เป็น false
+    .sort({ date_added: 1 }) // -1 เรียงข้อมูลตามวันที่เพิ่มข้อมูลล่าสุดก่อน, 1 เรียงข้อมูลจากวันที่เก่าสุดไปล่าสุด
     .exec()
     .then((docs) => {
       res.json(docs)
