@@ -42,6 +42,7 @@ export const create = async (req, res) => {
       express: form.express || '',
       isPayment: form.isPayment || false,
       isDelete: form.isDelete || false,
+      updateBy: form.updateBy || '',
       date_added: form.date_added
         ? new Date(Date.parse(form.date_added))
         : new Date(),
@@ -359,6 +360,7 @@ export const reject = (req, res) => {
   let data = {
     isPayment: false,
     isDelete: true,
+    updateBy: form.updateBy,
   }
 
   Order.findByIdAndUpdate(form._id, data, { useFindAndModify: false })

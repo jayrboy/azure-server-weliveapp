@@ -21,6 +21,7 @@ let orderSchema = new mongoose.Schema(
     express: String,
     isPayment: Boolean,
     isDelete: Boolean,
+    updateBy: String,
   },
   { timestamps: true }
 )
