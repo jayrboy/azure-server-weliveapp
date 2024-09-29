@@ -3,6 +3,7 @@ import mongoose from 'mongoose'
 let orderSchema = new mongoose.Schema(
   {
     idFb: String,
+    nameFb: String,
     name: String,
     email: String,
     picture_profile: Array,
@@ -15,10 +16,11 @@ let orderSchema = new mongoose.Schema(
     postcode: String,
     tel: String,
     date_added: Date,
-    isPayment: Boolean,
     complete: Boolean,
     sended: Boolean,
     express: String,
+    isPayment: Boolean,
+    isDelete: Boolean,
   },
   { timestamps: true }
 )

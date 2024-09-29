@@ -42,7 +42,7 @@ const router = express.Router()
  *        401:
  *          description: Unauthorized
  */
-router.post('/product', auth, create)
+router.post('/product', create)
 
 /**
  * @swagger

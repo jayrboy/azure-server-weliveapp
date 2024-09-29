@@ -44,7 +44,7 @@ export const create = (req, res) => {
 }
 
 export const update = (req, res) => {
-  console.log("product Update Method ")
+  console.log('product Update Method ')
   // console.log(req.body)
   let form = req.body
   let data = {
@@ -74,10 +74,10 @@ export const update = (req, res) => {
     .catch((err) => res.json({ message: err.message }))
 }
 
-export const cutStock = (req,res) => {
+export const cutStock = (req, res) => {
   let form = req.body
-  console.log("Receive REQ By CutStock in Product  ============= > ",req)
-  console.log("Receive form By CutStock in Product  ============= > ",form)
+  console.log('Receive REQ By CutStock in Product  ============= > ', req)
+  console.log('Receive form By CutStock in Product  ============= > ', form)
   // Product.findById()
 }
 export const remove = (req, res) => {

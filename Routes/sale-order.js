@@ -6,6 +6,7 @@ import {
   getById,
   update,
   updated,
+  reject,
   remove,
   paid,
   getOrderForReport,
@@ -131,6 +132,8 @@ router.get('/sale-order/read/:id', getById)
 router.put('/sale-order', upload.single('picture_payment'), update)
 
 router.put('/sale-order/j', upload.single('picture_payment'), updated)
+
+router.delete('/sale-order/reject', reject)
 
 /**
  * @swagger

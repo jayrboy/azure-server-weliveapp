@@ -14,6 +14,7 @@ export const create = async (req, res) => {
     if (!existingCustomer) {
       let customer = {
         idFb: req.body.idFb || '',
+        nameFb: req.body.nameFb || '',
         name: req.body.name || '',
         email: req.body.email || '',
         picture_profile: req.body.picture_profile || '',
@@ -24,6 +25,7 @@ export const create = async (req, res) => {
     let form = req.body
     let data = {
       idFb: form.idFb || '',
+      nameFb: form.nameFb || '',
       name: form.name || '',
       email: form.email || '',
       picture_profile: form.picture_profile || [],
@@ -35,10 +37,11 @@ export const create = async (req, res) => {
       district: form.district || '',
       postcode: form.postcode || 0,
       tel: form.tel || 0,
-      isPayment: form.isPayment || false,
       complete: form.complete || false,
       sended: form.sended || false,
       express: form.express || '',
+      isPayment: form.isPayment || false,
+      isDelete: form.isDelete || false,
       date_added: form.date_added
         ? new Date(Date.parse(form.date_added))
         : new Date(),
@@ -349,4 +352,21 @@ export const paid = async (req, res) => {
     console.error('Error updating order: ', err.message)
     res.status(400).json({ error: 'เกิดข้อผิดพลาดในการอัปเดตข้อมูล Order' })
   }
+}
+
+export const reject = (req, res) => {
+  let form = req.body
+  let data = {
+    isPayment: false,
+    isDelete: true,
+  }
+
+  Order.findByIdAndUpdate(form._id, data, { useFindAndModify: false })
+    .exec()
+    .then(() => {
+      Order.findById(form._id)
+        .exec()
+        .then((docs) => res.status(200).json(docs))
+    })
+    .catch((err) => res.status(404).json({ message: err.message }))
 }

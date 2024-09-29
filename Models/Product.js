@@ -3,7 +3,10 @@ import paginate from 'mongoose-paginate-v2' //สำหรับแบ่งเ�
 
 let productSchema = new mongoose.Schema(
   {
-    code: String,
+    code: {
+      type: String,
+      unique: true,
+    },
     name: String,
     price: Number,
     stock_quantity: Number,

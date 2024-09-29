@@ -25,6 +25,7 @@ export const updateById = async (req, res) => {
   let form = req.body
   let data = {
     idFb: form.idFb,
+    nameFb: form.nameFb,
     name: form.name,
     email: form.email,
     picture: form.picture,
