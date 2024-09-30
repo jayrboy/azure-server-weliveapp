@@ -12,6 +12,7 @@ import {
   getOrderForReport,
   setOrderComplete,
   setOrderSended,
+  downloadPDF,
 } from '../Controllers/sale-order-controller.js'
 import { auth } from '../middleware/auth.js'
 import { upload } from '../middleware/upload.js'
@@ -437,6 +438,8 @@ router.get(
   '/sale-order/getorderforreport/:id/:date/:month/:year',
   getOrderForReport
 )
+
+router.get('/sale-order/download-pdf/:id', downloadPDF)
 
 export default router
 
