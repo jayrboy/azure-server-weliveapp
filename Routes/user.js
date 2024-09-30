@@ -1,5 +1,10 @@
 import express from 'express'
-import { getAll, updateRole } from '../Controllers/user-controller.js'
+import {
+  getAll,
+  updateRole,
+  createBankAccount,
+  updateUser,
+} from '../Controllers/user-controller.js'
 import { auth } from '../middleware/auth.js'
 
 const router = express.Router()
@@ -9,5 +14,9 @@ const router = express.Router()
 router.get('/users', auth, getAll)
 
 router.post('/user/change-role', auth, updateRole)
+
+router.post('/user/bank-account/:id', auth, createBankAccount)
+
+router.put('/user', updateUser)
 
 export default router

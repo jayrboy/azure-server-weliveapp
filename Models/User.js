@@ -11,6 +11,7 @@ let userSchema = mongoose.Schema(
       type: Array,
       default: [{ data: { url: 'no-image.jpg' } }],
     },
+    bank_account: Array,
     userAccessToken: String,
     pages: { type: Array, default: [] }, // ฟิลด์สำหรับเก็บข้อมูลเพจ
   },
