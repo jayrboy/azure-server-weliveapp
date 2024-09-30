@@ -26,6 +26,19 @@ export const getAll = (req, res) => {
     })
 }
 
+export const getById = (req, res) => {
+  let { id } = req.params
+  // console.log(id)
+
+  User.findById(id)
+    .select('-password')
+    .exec()
+    .then((doc) => {
+      //   console.log(docs)
+      res.json(doc)
+    })
+}
+
 export const updateRole = async (req, res) => {
   // console.log(req.body)
   const newRole = req.body.data

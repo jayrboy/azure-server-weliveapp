@@ -1,6 +1,7 @@
 import express from 'express'
 import {
   getAll,
+  getById,
   updateRole,
   createBankAccount,
   updateUser,
@@ -13,10 +14,12 @@ const router = express.Router()
 
 router.get('/users', auth, getAll)
 
+router.get('/user/:id', getById)
+
 router.post('/user/change-role', auth, updateRole)
 
 router.post('/user/bank-account/:id', auth, createBankAccount)
 
-router.put('/user', updateUser)
+router.put('/user', auth, updateUser)
 
 export default router
