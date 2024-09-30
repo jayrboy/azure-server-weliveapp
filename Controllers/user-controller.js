@@ -56,7 +56,7 @@ export const createBankAccount = (req, res) => {
   const { id } = req.params
   let form = req.body
   let data = {
-    id: nanoid(),
+    id: form.id || nanoid(),
     bankID: form.bankID || '',
     bank: form.bank || '',
     bankName: form.bankName || '',
