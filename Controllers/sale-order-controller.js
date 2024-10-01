@@ -46,10 +46,10 @@ export const downloadPDF = async (req, res) => {
     doc.moveDown()
 
     const canvas = createCanvas()
-    Barcode(canvas, order._id.toString().replace(/[^a-zA-Z0-9]/g, ''), {
+    Barcode(canvas, order._id, {
       format: 'CODE128',
       displayValue: true,
-      text: order._id.toString().replace(/[^a-zA-Z0-9]/g, ''), // เอาเฉพาะตัวเลขและตัวอักษรที่รองรับ
+      font: 'Arial', // เปลี่ยนฟอนต์ที่ใช้แสดงบนเครื่อง linux
       fontSize: 18,
       textMargin: 10,
     })
@@ -150,10 +150,10 @@ export const printPDF = async (req, res) => {
     doc.moveDown()
 
     const canvas = createCanvas()
-    Barcode(canvas, order._id.toString().replace(/[^a-zA-Z0-9]/g, ''), {
+    Barcode(canvas, order._id, {
       format: 'CODE128',
       displayValue: true,
-      text: order._id.toString().replace(/[^a-zA-Z0-9]/g, ''), // เอาเฉพาะตัวเลขและตัวอักษรที่รองรับ
+      font: 'Arial', // เปลี่ยนฟอนต์ที่ใช้แสดงบนเครื่อง linux
       fontSize: 18,
       textMargin: 10,
     })
