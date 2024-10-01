@@ -6,7 +6,7 @@ import Product from '../Models/Product.js'
 import PDFDocument from 'pdfkit'
 import QRCode from 'qrcode'
 import { createCanvas } from 'canvas'
-import Barcode from 'jsbarcode'
+import bwipjs from 'bwip-js'
 
 import fs from 'fs'
 import path from 'path'
@@ -45,76 +45,84 @@ export const downloadPDF = async (req, res) => {
     doc.fontSize(20).text('ใบเสร็จรับเงิน', { align: 'start' })
     doc.moveDown()
 
-    const canvas = createCanvas()
-    Barcode(canvas, order._id, {
-      format: 'CODE128',
-      displayValue: true,
-      font: 'DejaVu Sans', // ใช้ฟอนต์ที่มีในระบบ Linux
-      fontSize: 18,
-      textMargin: 10,
-    })
+    // สร้างบาร์โค้ด
+    bwipjs.toBuffer(
+      {
+        bcid: 'code128', // Barcode type
+        text: order._id.toString(), // ข้อความที่ต้องการแสดงในบาร์โค้ด
+        scale: 3, // ปรับขนาด
+        height: 10, // ความสูงของบาร์โค้ด
+        includetext: true, // รวมข้อความด้านล่างบาร์โค้ด
+        textxalign: 'center', // จัดตำแหน่งข้อความให้ตรงกลาง
+      },
+      (err, png) => {
+        if (err) {
+          console.error(err)
+          return res.status(500).json({ message: 'Error generating barcode' })
+        }
+        doc.image(png, 95, doc.y - 60, { width: 200, align: 'center' }) // แสดงบาร์โค้ดใน PDF
 
-    const barcodeImage = canvas.toDataURL() // สร้างภาพเป็น Data URL
-    doc.image(barcodeImage, 95, doc.y - 60, { width: 200, align: 'center' }) // แสดงบาร์โค้ดใน PDF
+        // ข้อมูลร้านค้า
+        doc.fontSize(12).text('ร้านค้า: WE Live App', { align: 'center' })
+        doc.text(order.address, { align: 'center' })
+        doc.text(order.email, { align: 'center' })
+        doc.text(
+          `วันที่: ${new Date(order.createdAt).toLocaleDateString('th-TH')}`,
+          { align: 'center' }
+        )
+        doc.text(`หมายเลขออเดอร์: ${order._id}`, { align: 'center' })
 
-    // ข้อมูลร้านค้า
-    doc.fontSize(12).text('ร้านค้า: WE Live App', { align: 'center' })
-    doc.text(order.address, { align: 'center' })
-    doc.text(order.email, { align: 'center' })
-    doc.text(
-      'วันที่: ' + new Date(order.createdAt).toLocaleDateString('th-TH'),
-      { align: 'center' }
+        // สร้าง QR Code
+        const qrCodeData = `https://weliveapp.netlify.app/order/${id}`
+        QRCode.toDataURL(qrCodeData)
+          .then((qrCodeImage) => {
+            doc.image(qrCodeImage, 100, doc.y + 180, { width: 100 }) // แสดง QR Code ใน PDF
+            doc.moveDown()
+
+            // รายละเอียดลูกค้า
+            doc.text('ผู้รับสินค้า:', { underline: true })
+            doc.text(`ชื่อ: ${order.name}`)
+            doc.text(`ที่อยู่: ${order.address}`)
+            doc.moveDown()
+
+            // รายการสินค้า
+            doc.text('รายการสินค้า:', { underline: true })
+            order.orders.forEach((product) => {
+              doc.text(
+                `${product.name} - จำนวน: ${
+                  product.quantity
+                } ราคา: ${product.price
+                  .toFixed(2)
+                  .replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,')} บาท`
+              )
+            })
+
+            // สรุปยอดรวม
+            doc.text(
+              '-------------------------------------------------------------------------------------------------'
+            )
+            let grandTotal = order.orders.reduce(
+              (sum, product) => sum + product.price * product.quantity,
+              0
+            )
+            grandTotal += 50 // ค่าขนส่ง
+            doc.text('ค่าขนส่ง 50.00', { align: 'right' })
+            doc.text(
+              `ยอดรวม: ${grandTotal
+                .toFixed(2)
+                .replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,')}`,
+              { align: 'right' }
+            )
+            doc.text('ขอบคุณที่ใช้บริการ!', { align: 'right' })
+
+            doc.end() // สิ้นสุดการสร้าง PDF
+          })
+          .catch((err) => {
+            console.error(err)
+            res.status(500).json({ message: 'Error generating QR Code' })
+          })
+      }
     )
-    doc.text(`หมายเลขออเดอร์: ${order._id}`, { align: 'center' })
-
-    // สร้าง QR Code
-    const qrCodeData = `https://weliveapp.netlify.app/order/${id}`
-
-    // const qrCodePath = path.join(__dirname, `../qrcodes/${id}.png`)
-    // await QRCode.toFile(qrCodePath, qrCodeData)
-    // doc.image(qrCodeData, 0, doc.y + 180, { width: 100 }) // ปรับตำแหน่ง QR code
-    // doc.moveDown()
-
-    // สร้าง QR Code โดยไม่บันทึกลงไฟล์
-    const qrCodeImage = await QRCode.toDataURL(qrCodeData) // สร้าง QR Code เป็น Data URL
-    doc.image(qrCodeImage, 100, doc.y + 180, { width: 100 }) // แสดง QR Code ใน PDF
-    doc.moveDown()
-
-    // รายละเอียดลูกค้า
-    doc.text('ผู้รับสินค้า:', { underline: true })
-    doc.text(`ชื่อ: ${order.name}`)
-    doc.text(`ที่อยู่: ${order.address}`)
-    doc.moveDown()
-
-    // รายการสินค้า
-    doc.text('รายการสินค้า:', { underline: true })
-    order.orders.forEach((product) => {
-      doc.text(
-        `${product.name} - จำนวน: ${product.quantity} ราคา: ${product.price
-          .toFixed(2)
-          .replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,')} บาท`
-      )
-    })
-
-    // สรุปยอดรวม
-    doc.text(
-      '-------------------------------------------------------------------------------------------------'
-    )
-    let grandTotal = order.orders.reduce(
-      (sum, product) => sum + product.price * product.quantity,
-      0
-    )
-    grandTotal += 50
-    doc.text('ค่าขนส่ง ฿ 50.00', { align: 'right' })
-    doc.text(
-      `ยอดรวม: ฿ ${grandTotal
-        .toFixed(2)
-        .replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,')}`,
-      { align: 'right' }
-    )
-    doc.text('ขอบคุณที่ใช้บริการ!', { align: 'right' })
-
-    doc.end() // สิ้นสุดการสร้าง PDF
   } catch (err) {
     console.error(err) // Log error to console
     res.status(500).json({ message: err.message })
@@ -149,17 +157,17 @@ export const printPDF = async (req, res) => {
     doc.fontSize(20).text('ใบเสร็จรับเงิน', { align: 'start' })
     doc.moveDown()
 
-    const canvas = createCanvas()
-    Barcode(canvas, order._id, {
-      format: 'CODE128',
-      displayValue: true,
-      font: 'DejaVu Sans', // ใช้ฟอนต์ที่มีในระบบ Linux
-      fontSize: 18,
-      textMargin: 10,
+    // สร้างบาร์โค้ดด้วย bwip-js
+    const barcodeBuffer = await bwipjs.toBuffer({
+      bcid: 'code128', // Barcode type
+      text: order._id.toString(), // ข้อความที่ต้องการแสดงในบาร์โค้ด
+      scale: 3, // ปรับขนาด
+      height: 10, // ความสูงของบาร์โค้ด
+      includetext: true, // รวมข้อความด้านล่างบาร์โค้ด
+      textxalign: 'center', // จัดตำแหน่งข้อความให้ตรงกลาง
     })
 
-    const barcodeImage = canvas.toDataURL() // สร้างภาพเป็น Data URL
-    doc.image(barcodeImage, 95, doc.y - 60, { width: 200, align: 'center' }) // แสดงบาร์โค้ดใน PDF
+    doc.image(barcodeBuffer, 95, doc.y - 60, { width: 200, align: 'center' }) // แสดงบาร์โค้ดใน PDF
 
     // ข้อมูลร้านค้า
     doc.fontSize(12).text('ร้านค้า: WE Live App', { align: 'center' })
@@ -173,7 +181,6 @@ export const printPDF = async (req, res) => {
 
     // สร้าง QR Code
     const qrCodeData = `https://weliveapp.netlify.app/order/${id}`
-
     const qrCodeImage = await QRCode.toDataURL(qrCodeData) // สร้าง QR Code เป็น Data URL
     doc.image(qrCodeImage, 100, doc.y + 180, { width: 100 }) // แสดง QR Code ใน PDF
     doc.moveDown()
@@ -202,7 +209,7 @@ export const printPDF = async (req, res) => {
       (sum, product) => sum + product.price * product.quantity,
       0
     )
-    grandTotal += 50
+    grandTotal += 50 // ค่าขนส่ง
     doc.text('ค่าขนส่ง ฿ 50.00', { align: 'right' })
     doc.text(
       `ยอดรวม: ฿ ${grandTotal
@@ -218,7 +225,6 @@ export const printPDF = async (req, res) => {
     res.status(500).json({ message: err.message })
   }
 }
-
 export const create = async (req, res) => {
   try {
     const errors = validationResult(req)
