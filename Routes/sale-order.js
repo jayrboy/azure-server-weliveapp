@@ -13,6 +13,7 @@ import {
   setOrderComplete,
   setOrderSended,
   downloadPDF,
+  printPDF,
 } from '../Controllers/sale-order-controller.js'
 import { auth } from '../middleware/auth.js'
 import { upload } from '../middleware/upload.js'
@@ -440,6 +441,8 @@ router.get(
 )
 
 router.get('/sale-order/download-pdf/:id', downloadPDF)
+
+router.get('/sale-order/print-pdf/:id', printPDF)
 
 export default router
 
