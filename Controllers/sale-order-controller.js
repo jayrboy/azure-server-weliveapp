@@ -7,7 +7,7 @@ import PDFDocument from 'pdfkit'
 import QRCode from 'qrcode'
 import { createCanvas } from 'canvas'
 
-import Barcode from 'jsbarcode'
+// import Barcode from 'jsbarcode'
 import bwipjs from 'bwip-js'
 
 import fs from 'fs'
