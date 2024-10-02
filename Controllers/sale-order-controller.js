@@ -599,12 +599,15 @@ export const reject = (req, res) => {
 export const payment = (req, res) => {
   let form = req.body
   let data = {
-    isPayment: form.isPayment || true,
-    picture_payment: form.picture_payment || '',
+    name: form.name || '',
+    address: form.address || '',
     province: form.province || '',
-    amphure: form.picture_payment || '',
+    amphure: form.amphure || '',
     district: form.district || '',
     postcode: form.postcode || '',
+    tel: form.tel || '',
+    picture_payment: form.picture_payment || '',
+    isPayment: form.isPayment || true,
   }
 
   // บันทึกเป็นไฟล์

@@ -4,6 +4,7 @@ import Province from '../Models/Province.js'
 import Amphure from '../Models/Amphure.js'
 import District from '../Models/District.js'
 import Geography from '../Models/Geography.js'
+import { body } from 'express-validator'
 
 const router = express.Router()
 
@@ -37,6 +38,20 @@ router.get('/geography', (req, res) => {
   Geography.find({})
     .exec()
     .then((docs) => res.json(docs))
+})
+
+router.get('/amphure/existing/:amphure', async (req, res) => {
+  let amphure = req.params.amphure
+
+  let amphureId = await Amphure.findOne({ name_th: amphure }).exec()
+  res.send(amphureId)
+})
+
+router.get('/district/existing', async (req, res) => {
+  let { district } = req.body
+
+  let districtId = await District.find({ name_th: district }).exec()
+  res.send(districtId)
 })
 
 export default router
