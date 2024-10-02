@@ -15,16 +15,22 @@ router.get('/province', (req, res) => {
     .then((docs) => res.json(docs))
 })
 
-router.get('/amphure', (req, res) => {
-  Amphure.find({})
+router.get('/province/amphure/:id', (req, res) => {
+  let id = req.params.id
+
+  Amphure.find({ province_id: id })
     .exec()
-    .then((docs) => res.json(docs))
+    .then((docs) => res.status(200).json(docs))
+    .catch((error) => res.status(500).json({ message: error }))
 })
 
-router.get('/district', (req, res) => {
-  District.find({})
+router.get('/district/amphure/:id', (req, res) => {
+  let id = req.params.id
+
+  District.find({ amphure_id: id })
     .exec()
-    .then((docs) => res.json(docs))
+    .then((docs) => res.status(200).json(docs))
+    .catch((error) => res.status(500).json({ message: error }))
 })
 
 router.get('/geography', (req, res) => {

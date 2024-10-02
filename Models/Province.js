@@ -5,7 +5,7 @@ let provinceSchema = new mongoose.Schema({
   code: String,
   name_th: String,
   name_en: String,
-  geography_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Geography' },
+  geography_id: String,
 })
 
 let Province = mongoose.model('Province', provinceSchema)

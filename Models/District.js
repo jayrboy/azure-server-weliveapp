@@ -5,7 +5,7 @@ let districtSchema = new mongoose.Schema({
   code: String,
   name_th: String,
   name_en: String,
-  amphure_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Amphure' },
+  amphure_id: String,
 })
 
 let District = mongoose.model('District', districtSchema)

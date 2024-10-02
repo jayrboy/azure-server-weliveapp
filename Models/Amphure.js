@@ -5,7 +5,7 @@ let amphureSchema = new mongoose.Schema({
   code: String,
   name_th: String,
   name_en: String,
-  province_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Province' },
+  province_id: String,
 })
 
 let Amphure = mongoose.model('Amphure', amphureSchema)

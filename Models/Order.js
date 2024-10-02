@@ -10,9 +10,9 @@ let orderSchema = new mongoose.Schema(
     orders: Array,
     picture_payment: String,
     address: String,
-    sub_district: String, // ตำบล/แขวง
-    sub_area: String, // อำเภอ/เขต
-    district: String, // จังหวัด
+    district: String, // ตำบล/แขวง
+    amphure: String, // อำเภอ/เขต
+    province: String, // จังหวัด
     postcode: String,
     tel: String,
     date_added: Date,

@@ -225,6 +225,7 @@ export const printPDF = async (req, res) => {
     res.status(500).json({ message: err.message })
   }
 }
+
 export const create = async (req, res) => {
   try {
     const errors = validationResult(req)
@@ -254,8 +255,8 @@ export const create = async (req, res) => {
       orders: form.orders || [],
       picture_payment: form.picture_payment || '',
       address: form.address || '',
-      sub_district: form.sub_district || '',
-      sub_area: form.sub_area || '',
+      province: form.province || '',
+      amphure: form.amphure || '',
       district: form.district || '',
       postcode: form.postcode || 0,
       tel: form.tel || 0,
@@ -600,6 +601,10 @@ export const payment = (req, res) => {
   let data = {
     isPayment: form.isPayment || true,
     picture_payment: form.picture_payment || '',
+    province: form.province || '',
+    amphure: form.picture_payment || '',
+    district: form.district || '',
+    postcode: form.postcode || '',
   }
 
   // บันทึกเป็นไฟล์
