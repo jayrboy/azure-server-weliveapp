@@ -101,3 +101,16 @@ export const updateUser = (req, res) => {
       })
     })
 }
+
+export const getBankAccount = (req, res) => {
+  try {
+    let id = req.params.id
+
+    User.findById(id)
+      .select('-password')
+      .exec()
+      .then((doc) => res.status(200).json(doc.bank_account))
+  } catch (error) {
+    res.status(500).json({ message: error })
+  }
+}

@@ -265,6 +265,7 @@ export const create = async (req, res) => {
       express: form.express || '',
       isPayment: form.isPayment || false,
       isDelete: form.isDelete || false,
+      vendorId: form.vendorId || '',
       updateBy: form.updateBy || '',
       date_added: form.date_added
         ? new Date(Date.parse(form.date_added))

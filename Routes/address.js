@@ -11,9 +11,14 @@ const router = express.Router()
 // http://localhost:8000/api/users
 
 router.get('/province', (req, res) => {
-  Province.find({})
-    .exec()
-    .then((docs) => res.json(docs))
+  try {
+    Province.find({})
+      .exec()
+      .then((docs) => res.status(200).json(docs))
+  } catch (error) {
+    console.log(error)
+    res.status(500).json({ message: error })
+  }
 })
 
 router.get('/province/amphure/:id', (req, res) => {
