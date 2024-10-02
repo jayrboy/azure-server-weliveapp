@@ -69,7 +69,7 @@ async function handleMessage(sender_psid, received_message) {
     const userProfile = await getUserProfileName(sender_psid)
 
     // ค้นหาออเดอร์ของผู้ใช้ใน MongoDB
-    const order = await Order.findOne({ name: userProfile.name }).exec()
+    const order = await Order.findOne({ nameFb: userProfile.name }).exec()
 
     // กรณีที่ผู้ใช้ส่งข้อความปกติ
     if (received_message.text) {
