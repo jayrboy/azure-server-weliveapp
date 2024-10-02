@@ -594,3 +594,29 @@ export const reject = (req, res) => {
     })
     .catch((err) => res.status(404).json({ message: err.message }))
 }
+
+export const payment = (req, res) => {
+  let form = req.body
+  let data = {
+    isPayment: form.isPayment || true,
+    picture_payment: form.picture_payment || '',
+  }
+
+  // บันทึกเป็นไฟล์
+  // const base64Data = picture_payment.replace(/^data:image\/\w+;base64,/, '')
+  // const buffer = Buffer.from(base64Data, 'base64')
+  // fs.writeFile(`./uploads/payment_${_id}.png`, buffer, (err) => {
+  //   if (err) {
+  //     return res.status(500).send('Error saving image')
+  //   }
+  // })
+
+  Order.findByIdAndUpdate(form._id, data, { useFindAndModify: false })
+    .exec()
+    .then(() => {
+      Order.findById(form._id)
+        .exec()
+        .then((docs) => res.status(200).json(docs))
+    })
+    .catch((err) => res.status(404).json({ message: err.message }))
+}

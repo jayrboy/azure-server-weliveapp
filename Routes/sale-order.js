@@ -6,6 +6,7 @@ import {
   getById,
   update,
   updated,
+  payment,
   reject,
   remove,
   paid,
@@ -132,8 +133,8 @@ router.get('/sale-order/read/:id', getById)
  *          description: Unauthorized
  */
 router.put('/sale-order', upload.single('picture_payment'), update)
-
 router.put('/sale-order/j', upload.single('picture_payment'), updated)
+router.put('/sale-order/payment', payment)
 
 router.delete('/sale-order/reject', reject)
 
