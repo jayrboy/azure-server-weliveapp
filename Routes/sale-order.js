@@ -5,11 +5,9 @@ import {
   getAll,
   getById,
   update,
-  updated,
   payment,
   reject,
   remove,
-  paid,
   getOrderForReport,
   setOrderComplete,
   setOrderSended,
@@ -133,7 +131,8 @@ router.get('/sale-order/read/:id', getById)
  *          description: Unauthorized
  */
 router.put('/sale-order', upload.single('picture_payment'), update)
-router.put('/sale-order/j', upload.single('picture_payment'), updated)
+
+//TODO: อัปเดตข้อมูลออเดอร์ (เก็บรูปภาพเป็น "text...")
 router.put('/sale-order/payment', payment)
 
 router.delete('/sale-order/reject', reject)
@@ -442,7 +441,6 @@ router.get(
 )
 
 router.get('/sale-order/download-pdf/:id', downloadPDF)
-
 router.get('/sale-order/print-pdf/:id', printPDF)
 
 export default router

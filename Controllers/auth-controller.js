@@ -12,10 +12,10 @@ export const generateToken = async (req, res) => {
     jwt.sign(
       payload,
       process.env.JWT_SECRET,
-      { expiresIn: '1d' },
+      { expiresIn: '1d' }, // Token expires in 1 day
       (error, token) => {
         if (error) throw error
-        res.status(200).json({ token, payload })
+        res.status(200).json({ token, payload }) // Send token and payload
       }
     )
   } catch (error) {

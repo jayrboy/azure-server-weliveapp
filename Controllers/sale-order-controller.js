@@ -16,7 +16,7 @@ import { fileURLToPath } from 'url'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-//TODO
+// Download / Printer PDF ขนาด "A6"
 export const downloadPDF = async (req, res) => {
   const id = req.params.id
 
@@ -128,7 +128,6 @@ export const downloadPDF = async (req, res) => {
     res.status(500).json({ message: err.message })
   }
 }
-
 export const printPDF = async (req, res) => {
   const id = req.params.id
 
@@ -226,6 +225,7 @@ export const printPDF = async (req, res) => {
   }
 }
 
+//TODO: สร้างออเดอร์อัตโนมัติจาก GetComment.jsx ส่งข้อมูลมาให้
 export const create = async (req, res) => {
   try {
     const errors = validationResult(req)
@@ -258,14 +258,14 @@ export const create = async (req, res) => {
       province: form.province || '',
       amphure: form.amphure || '',
       district: form.district || '',
-      postcode: form.postcode || 0,
-      tel: form.tel || 0,
+      postcode: form.postcode || '',
+      tel: form.tel || '',
+      isPayment: form.isPayment || false,
       complete: form.complete || false,
       sended: form.sended || false,
-      express: form.express || '',
-      isPayment: form.isPayment || false,
       isDelete: form.isDelete || false,
-      vendorId: form.vendorId || '',
+      express: form.express || '',
+      vendorId: form.vendorId || '65feb6291f7e46ed630b4e20', // ID ผู้ขายสินค้ารายการนั้นๆ
       updateBy: form.updateBy || '',
       date_added: form.date_added
         ? new Date(Date.parse(form.date_added))
@@ -280,14 +280,11 @@ export const create = async (req, res) => {
         { $push: { orders: data.orders[0] } },
         { useFindAndModify: false }
       )
-
       existingOrder = await Order.findById(existingOrder._id)
-
-      res.status(200).send(existingOrder)
+      res.status(200).json(existingOrder)
     } else {
       const newOrder = await Order.create(data)
-
-      res.status(200).send(newOrder)
+      res.status(200).json(newOrder)
     }
   } catch (error) {
     console.error('Error processing request: ', error)
@@ -311,15 +308,115 @@ export const getAll = (req, res) => {
     })
 }
 
+export const getById = (req, res) => {
+  let id = req.params.id
+  Order.findById(id)
+    .exec()
+    .then((docs) => res.json(docs))
+}
+
+// Update Order V1 "multiple/form-data"
+export const update = async (req, res) => {
+  // console.log(req.body)
+  try {
+    let form = req.body
+
+    if (req.file) {
+      form.picture_payment = req.file.filename
+    }
+
+    // console.log(form) // ตรวจสอบข้อมูลที่ได้รับจาก form-data
+
+    // อัปเดตข้อมูล products ภายใน Order
+    let updatedOrder = await Order.findByIdAndUpdate(form._id, form, {
+      useFindAndModify: false,
+    })
+
+    console.log('Document updated sale order')
+    res.json(updatedOrder)
+  } catch (err) {
+    console.error('Error updating order: ', err)
+    res.status(400).json({ error: 'เกิดข้อผิดพลาดในการอัปเดตข้อมูล Order' })
+  }
+}
+
+//! ลบข้อมูลถาวร
+export const remove = (req, res) => {
+  let _id = req.body._id
+
+  Order.findOneAndDelete(_id, { useFindAndModify: false })
+    .exec()
+    .then(() => {
+      Order.find()
+        .exec()
+        .then((docs) => res.json(docs))
+    })
+    .catch((err) => res.json({ message: err.message }))
+}
+
+//! ปฏิเสธออเดอร์ { isDelete: true } : ปฏิเสธ/หมดเวลา
+export const reject = (req, res) => {
+  let form = req.body
+  let data = {
+    isPayment: false,
+    isDelete: true,
+    updateBy: form.updateBy,
+  }
+
+  Order.findByIdAndUpdate(form._id, data, { useFindAndModify: false })
+    .exec()
+    .then(() => {
+      Order.findById(form._id)
+        .exec()
+        .then((docs) => res.status(200).json(docs))
+    })
+    .catch((err) => res.status(404).json({ message: err.message }))
+}
+
+//TODO: อัปเดตข้อมูลออเดอร์ลูกค้าที่สั่งซื้อ Order V2 "application/json" { isPayment: true }
+export const payment = (req, res) => {
+  let form = req.body
+  let data = {
+    name: form.name || '',
+    address: form.address || '',
+    province: form.province || '',
+    amphure: form.amphure || '',
+    district: form.district || '',
+    postcode: form.postcode || '',
+    tel: form.tel || '',
+    picture_payment: form.picture_payment || '',
+    isPayment: form.isPayment || true,
+  }
+
+  // บันทึกเป็นไฟล์
+  // const base64Data = picture_payment.replace(/^data:image\/\w+;base64,/, '')
+  // const buffer = Buffer.from(base64Data, 'base64')
+  // fs.writeFile(`./uploads/payment_${_id}.png`, buffer, (err) => {
+  //   if (err) {
+  //     return res.status(500).send('Error saving image')
+  //   }
+  // })
+
+  Order.findByIdAndUpdate(form._id, data, { useFindAndModify: false })
+    .exec()
+    .then(() => {
+      Order.findById(form._id)
+        .exec()
+        .then((docs) => res.status(200).json(docs))
+    })
+    .catch((err) => res.status(404).json({ message: err.message }))
+}
+
+//TODO: ยืนยันการชำระเงิน { complete: true } --------> " ตัดสต็อก "
 export const setOrderComplete = (req, res) => {
-  console.log('data for changing status complete')
+  console.log('Endpoint for changing a status completed')
   const { id } = req.params
 
   Order.findById(id)
     .exec()
-    .then((order) => {
+    .then((docs) => {
       if (!order) {
-        return res.status(404).json({ error: 'Order not found' })
+        return res.status(404).json({ message: 'Order not found' })
       }
 
       // Toggle the complete status
@@ -334,6 +431,7 @@ export const setOrderComplete = (req, res) => {
         for (let item of req.body.orders) {
           const product = await Product.findById(item.order_id).exec()
           console.log('Get Product By Id REQ Body', product)
+
           if (product) {
             product.stock_quantity += order.complete
               ? -item.quantity
@@ -342,34 +440,29 @@ export const setOrderComplete = (req, res) => {
           }
         }
       }
-
       // Save the updated order and update product stock
-      order
-        .save()
-        .then(async (updatedOrder) => {
-          await updateProductStock()
-          res.json(updatedOrder)
-        })
-        .catch((error) => res.status(500).json({ error: error.message }))
+      order.save().then(async (updatedOrder) => {
+        await updateProductStock()
+        res.json(updatedOrder)
+      })
     })
     .catch((error) => res.status(500).json({ error: error.message }))
 }
 
+//TODO: ยืนยัน การส่งสินค้า { sended: true } : "ส่งสินค้าแล้ว"
 export const setOrderSended = (req, res) => {
-  // console.log('data for changing status Sended', req);
+  console.log('Endpoint for changing status Sended :', req)
   const { id } = req.params
 
   Order.findById(id)
     .exec()
     .then((order) => {
-      if (!order) {
-        return res.status(404).json({ error: 'Order not found' })
-      }
+      if (!order) res.status(404).json({ message: 'Order not found' })
 
       // Toggle the sended status
       order.sended = !order.sended
       if (order.sended == false) {
-        order.express = 'ไม่ได้ระบุรหัสขนส่ง'
+        order.express = ''
       } else {
         // Update express if provided
         if (req.body.express) {
@@ -378,16 +471,14 @@ export const setOrderSended = (req, res) => {
       }
 
       // Save the updated order
-      order
-        .save()
-        .then((updatedOrder) => res.json(updatedOrder))
-        .catch((error) => res.status(500).json({ error: error.message }))
+      order.save().then((updatedOrder) => res.status(200).json(updatedOrder))
     })
     .catch((error) => res.status(500).json({ error: error.message }))
 }
 
+//TODO: แสดงรายงานกราฟแต่ละรายการสินค้า * สินค้าที่ตัดสต็อกเรียบร้อย * สินค้าในออเดอร์ที่ยืนยันการชำระเงินเรียบร้อยแล้ว *
 export const getOrderForReport = async (req, res) => {
-  console.log('data for create report')
+  console.log('Endpoint for create report')
   const { id, date, month, year } = req.params // Receive id, date, month, and year from request parameters
 
   try {
@@ -418,14 +509,10 @@ export const getOrderForReport = async (req, res) => {
     await Product.findById(id)
       .exec()
       .then((docs) => {
-        if (!docs) {
-          return res.status(404).json({ error: 'Product not found' })
-        }
+        if (!docs) res.status(404).json({ message: 'Product not found' })
         cost = docs.cost
-
         productName = docs.name
       })
-      .catch((error) => res.status(500).json({ error: error.message }))
 
     docs.forEach((doc) => {
       doc.orders.forEach((order) => {
@@ -464,7 +551,7 @@ export const getOrderForReport = async (req, res) => {
     })
     let profit = totalPrice - cost * totalQuantity
 
-    res.json({
+    res.status(200).json({
       profit,
       productName,
       totalQuantity,
@@ -480,152 +567,4 @@ export const getOrderForReport = async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
-}
-
-export const getById = (req, res) => {
-  let id = req.params.id
-  Order.findById(id)
-    .exec()
-    .then((docs) => res.json(docs))
-}
-
-export const update = async (req, res) => {
-  // console.log(req.body)
-  try {
-    let form = req.body
-
-    if (req.file) {
-      form.picture_payment = req.file.filename
-    }
-
-    // console.log(form) // ตรวจสอบข้อมูลที่ได้รับจาก form-data
-
-    // อัปเดตข้อมูล products ภายใน Order
-    let updatedOrder = await Order.findByIdAndUpdate(form._id, form, {
-      useFindAndModify: false,
-    })
-
-    console.log('Document updated sale order')
-    res.json(updatedOrder)
-  } catch (err) {
-    console.error('Error updating order: ', err)
-    res.status(400).json({ error: 'เกิดข้อผิดพลาดในการอัปเดตข้อมูล Order' })
-  }
-}
-
-export const updated = async (req, res) => {
-  try {
-    let form = req.body
-    // console.log(form) // ตรวจสอบข้อมูลที่ได้รับจาก form-data ที่ผ่าน multiple/data
-
-    if (req.file) {
-      form.picture_payment = req.file.filename
-    }
-
-    // อัปเดตข้อมูล products ภายใน Order
-    let updatedOrder = await Order.findByIdAndUpdate(form._id, form, {
-      useFindAndModify: false,
-    })
-
-    let orderExisting = await Order.findById(updatedOrder._id).exec()
-    console.log('Document updated sale order')
-
-    res.json(orderExisting)
-  } catch (err) {
-    console.error('Error updating order: ', err)
-    res.status(400).json({ error: 'เกิดข้อผิดพลาดในการอัปเดตข้อมูล Order' })
-  }
-}
-
-export const remove = (req, res) => {
-  let _id = req.body._id
-
-  Order.findOneAndDelete(_id, { useFindAndModify: false })
-    .exec()
-    .then(() => {
-      Order.find()
-        .exec()
-        .then((docs) => res.json(docs))
-    })
-    .catch((err) => res.json({ message: err.message }))
-}
-
-export const paid = async (req, res) => {
-  try {
-    let form = req.body
-    // console.log(form) // ตรวจสอบข้อมูลที่ได้รับจาก form-data
-
-    // อัปเดตข้อมูล products ภายใน Order
-    Order.findByIdAndUpdate(
-      form._id,
-      { complete: form.complete },
-      {
-        useFindAndModify: false,
-      }
-    )
-      .exec()
-      .then(() => {
-        //หลังการอัปเดต ก็อ่านข้อมูลอีกครั้ง แล้วส่งไปแสดงผลที่ฝั่งโลคอลแทนข้อมูลเดิม
-        Order.findById(form._id)
-          .exec()
-          .then((docs) => {
-            console.log(`Order: ${docs.name} has been completed.`)
-            res.json(docs)
-          })
-      })
-  } catch (err) {
-    console.error('Error updating order: ', err.message)
-    res.status(400).json({ error: 'เกิดข้อผิดพลาดในการอัปเดตข้อมูล Order' })
-  }
-}
-
-export const reject = (req, res) => {
-  let form = req.body
-  let data = {
-    isPayment: false,
-    isDelete: true,
-    updateBy: form.updateBy,
-  }
-
-  Order.findByIdAndUpdate(form._id, data, { useFindAndModify: false })
-    .exec()
-    .then(() => {
-      Order.findById(form._id)
-        .exec()
-        .then((docs) => res.status(200).json(docs))
-    })
-    .catch((err) => res.status(404).json({ message: err.message }))
-}
-
-export const payment = (req, res) => {
-  let form = req.body
-  let data = {
-    name: form.name || '',
-    address: form.address || '',
-    province: form.province || '',
-    amphure: form.amphure || '',
-    district: form.district || '',
-    postcode: form.postcode || '',
-    tel: form.tel || '',
-    picture_payment: form.picture_payment || '',
-    isPayment: form.isPayment || true,
-  }
-
-  // บันทึกเป็นไฟล์
-  // const base64Data = picture_payment.replace(/^data:image\/\w+;base64,/, '')
-  // const buffer = Buffer.from(base64Data, 'base64')
-  // fs.writeFile(`./uploads/payment_${_id}.png`, buffer, (err) => {
-  //   if (err) {
-  //     return res.status(500).send('Error saving image')
-  //   }
-  // })
-
-  Order.findByIdAndUpdate(form._id, data, { useFindAndModify: false })
-    .exec()
-    .then(() => {
-      Order.findById(form._id)
-        .exec()
-        .then((docs) => res.status(200).json(docs))
-    })
-    .catch((err) => res.status(404).json({ message: err.message }))
 }
