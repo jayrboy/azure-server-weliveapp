@@ -568,3 +568,21 @@ export const getOrderForReport = async (req, res) => {
     res.status(500).json({ error: error.message })
   }
 }
+
+export const ccOrder = (req, res) => {
+  // console.log(req.body)
+  let form = req.body
+  let data = {
+    isPayment: false,
+    isDelete: true,
+  }
+
+  Order.findOneAndUpdate({ idFb: form.idFb }, data, { useFindAndModify: false })
+    .exec()
+    .then(() => {
+      Order.findOne({ idFb: form.idFb })
+        .exec()
+        .then((docs) => res.status(200).json(docs))
+    })
+    .catch((error) => res.status(500).json({ message: error }))
+}
