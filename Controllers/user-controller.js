@@ -61,6 +61,7 @@ export const createBankAccount = (req, res) => {
     bank: form.bank || '',
     bankName: form.bankName || '',
     promptPay: form.promptPay || '',
+    qrCode: form.qrCode || '',
   }
   // console.log('ID :', id)
   // console.log('Data :', data)
