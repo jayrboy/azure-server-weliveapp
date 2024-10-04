@@ -481,9 +481,9 @@ export const getOrderForReport = async (req, res) => {
   const { id, date, month, year } = req.params // Receive id, date, month, and year from request parameters
 
   try {
+    // ค้นหาเอกสารที่เกี่ยวข้องกับ order
     const docs = await Order.find({
-      'orders._id': id,
-      complete: true,
+      complete: { $in: true },
     }).exec()
 
     if (docs.length === 0) {
@@ -497,27 +497,29 @@ export const getOrderForReport = async (req, res) => {
     let totalPrice = 0
     let productName = ''
     const dailySalesData = Array(30).fill(0) // Array to hold sales data for the past 30 days
+
+    // คำนวณวันที่ย้อนหลัง 30 วัน
     const last30Days = Array.from({ length: 30 }, (_, i) => {
-      console.log(year + '-' + month + '-' + date)
-      const Localdate = new Date(year + '-' + month + '-' + date)
+      const Localdate = new Date(`${year}-${month}-${date}`)
       Localdate.setDate(Localdate.getDate() - i)
       return Localdate
     })
-    let cost = 0
 
-    await Product.findById(id)
-      .exec()
-      .then((docs) => {
-        if (!docs) res.status(404).json({ message: 'Product not found' })
-        cost = docs.cost
-        productName = docs.name
-      })
+    // ค้นหาข้อมูลสินค้า
+    const product = await Product.findById(id).exec()
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' })
+    }
 
+    let cost = product.cost
+    productName = product.name
+
+    // ประมวลผลข้อมูล orders
     docs.forEach((doc) => {
       doc.orders.forEach((order) => {
-        if (order._id === id) {
-          productName = order.name
+        if (order.id === id) {
           const orderDate = new Date(doc.date_added)
+
           const orderYear = orderDate.getFullYear()
           const orderMonth = orderDate.getMonth() + 1 // Months are 0-indexed
           const orderDay = orderDate.getDate()
@@ -525,7 +527,7 @@ export const getOrderForReport = async (req, res) => {
           totalQuantity += order.quantity
           totalPrice += order.quantity * order.price
 
-          // Calculate sales for the past 30 days
+          // คำนวณยอดขายย้อนหลัง 30 วัน
           last30Days.forEach((date, index) => {
             if (
               orderDate.getFullYear() === date.getFullYear() &&
@@ -536,6 +538,7 @@ export const getOrderForReport = async (req, res) => {
             }
           })
 
+          // คำนวณยอดขายรายวัน รายเดือน และรายปี
           if (orderYear === parseInt(year)) {
             yearlySales += order.quantity * order.price
             if (orderMonth === parseInt(month)) {
@@ -548,8 +551,11 @@ export const getOrderForReport = async (req, res) => {
         }
       })
     })
+
+    // คำนวณกำไร
     let profit = totalPrice - cost * totalQuantity
 
+    // ส่งข้อมูลกลับไปยัง client
     res.status(200).json({
       profit,
       productName,
@@ -561,7 +567,7 @@ export const getOrderForReport = async (req, res) => {
       dailySalesData: dailySalesData.reverse(), // Reverse the data to start from the oldest date
       last30Days: last30Days
         .map((date) => date.toISOString().split('T')[0])
-        .reverse(), // Send the dates as well
+        .reverse(), // ส่งข้อมูลวันที่กลับไป
     })
   } catch (error) {
     res.status(500).json({ error: error.message })
