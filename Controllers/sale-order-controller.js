@@ -358,7 +358,6 @@ export const remove = (req, res) => {
 export const reject = (req, res) => {
   let form = req.body
   let data = {
-    isPayment: false,
     isDelete: true,
     updateBy: form.updateBy,
   }
@@ -370,10 +369,10 @@ export const reject = (req, res) => {
         .exec()
         .then((docs) => res.status(200).json(docs))
     })
-    .catch((err) => res.status(404).json({ message: err.message }))
+    .catch((err) => res.status(500).send(false))
 }
 
-//TODO: อัปเดตข้อมูลออเดอร์ลูกค้าที่สั่งซื้อ Order V2 "application/json" { isPayment: true }
+// อัปเดตข้อมูลออเดอร์ลูกค้าที่สั่งซื้อ Order V2 "application/json" { isPayment: true }
 export const payment = (req, res) => {
   let form = req.body
   let data = {
@@ -407,46 +406,46 @@ export const payment = (req, res) => {
     .catch((err) => res.status(404).json({ message: err.message }))
 }
 
-//TODO: ยืนยันการชำระเงิน { complete: true } --------> " ตัดสต็อก "
+// ยืนยันการชำระเงิน { complete: true } --------> " ตัดสต็อก "
 export const setOrderComplete = (req, res) => {
   console.log('Endpoint for changing a status completed')
   const { id } = req.params
+  let productsInOrder = req.body.orders
+  let data = {
+    complete: true,
+    updateBy: req.body.updateBy,
+  }
 
-  Order.findById(id)
+  // อัปเดตสถานะออเดอร์เป็น complete
+  Order.findByIdAndUpdate(id, data, { useFindAndModify: false })
     .exec()
-    .then((docs) => {
-      if (!order) {
-        return res.status(404).json({ message: 'Order not found' })
-      }
+    .then(() => {
+      console.log('REQ Body Come : ', productsInOrder)
 
-      // Toggle the complete status
-      order.complete = !order.complete
-      if (order.complete == false) {
-        order.sended = false
-      }
+      // ใช้ Promise.all เพื่อรอให้คำสั่ง async ทุกคำสั่งเสร็จสมบูรณ์
+      productsInOrder.map((productInOrder) =>
+        Product.findById(productInOrder.id)
+          .exec()
+          .then((p) => {
+            if (!p) new Error(`Product with id ${productInOrder.id} not found`)
 
-      console.log('REQ Body Come : ', req.body.orders)
-      // Update the product stock quantity
-      const updateProductStock = async () => {
-        for (let item of req.body.orders) {
-          const product = await Product.findById(item.order_id).exec()
-          console.log('Get Product By Id REQ Body', product)
+            // ตัดสต็อกสินค้า และเพิ่ม paid
+            // p.stock_quantity -= productInOrder.quantity
+            p.paid += productInOrder.quantity
+            p.cf += productInOrder.quantity
+            p.remaining_cf -= productInOrder.quantity
+            p.remaining -= productInOrder.quantity
 
-          if (product) {
-            product.stock_quantity += order.complete
-              ? -item.quantity
-              : item.quantity
-            await product.save()
-          }
-        }
-      }
-      // Save the updated order and update product stock
-      order.save().then(async (updatedOrder) => {
-        await updateProductStock()
-        res.json(updatedOrder)
-      })
+            // บันทึกการเปลี่ยนแปลง
+            p.save()
+          })
+      )
     })
-    .catch((error) => res.status(500).json({ error: error.message }))
+    .then((doc) => {
+      res.status(200).json(doc)
+      console.log({ message: 'Order completed and stock updated successfully' })
+    })
+    .catch((error) => res.status(500).json({ message: error }))
 }
 
 //TODO: ยืนยัน การส่งสินค้า { sended: true } : "ส่งสินค้าแล้ว"

@@ -136,7 +136,7 @@ router.put('/sale-order', upload.single('picture_payment'), update)
 //TODO: อัปเดตข้อมูลออเดอร์ (เก็บรูปภาพเป็น "text...")
 router.put('/sale-order/payment', payment)
 
-router.delete('/sale-order/reject', reject)
+router.put('/sale-order/reject', reject)
 
 router.put('/sale-order/cc', ccOrder)
 
