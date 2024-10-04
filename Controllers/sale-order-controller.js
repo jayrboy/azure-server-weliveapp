@@ -406,7 +406,7 @@ export const payment = (req, res) => {
     .catch((err) => res.status(404).json({ message: err.message }))
 }
 
-// ยืนยันการชำระเงิน { complete: true } --------> " ตัดสต็อก "
+//TODO: ยืนยันการชำระเงิน { complete: true } --------> " ตัดสต็อก "
 export const setOrderComplete = (req, res) => {
   console.log('Endpoint for changing a status completed')
   const { id } = req.params
