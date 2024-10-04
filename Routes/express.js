@@ -11,23 +11,26 @@ router.post('/ex/create', (req, res) => {
     sprice: form.sprice || '',
     maxprice: form.maxprice || 0,
     whenfprice: form.whenfprice || 0,
-    selectex: form.selectex || 1,
     selectcod: form.selectcod || 1,
+    expressUrl: form.expressUrl || '',
+    isSelectEx: form.isSelect || false,
+    logo: form.logo || '',
     date_start: new Date(Date.parse(form.date_start)) || new Date(),
   }
 
   ExpressModel.create(data)
     .then((docs) => {
-      console.log('Document saved')
+      console.log('Express saved')
       res.send(true)
     })
     .catch((err) => {
-      console.log(err.message).send(false)
+      console.log(err.message)
+      res.send(false)
     })
 })
 
 router.get('/ex/read', (req, res) => {
-  ExpressModel.find()
+  ExpressModel.find({})
     .exec()
     .then((docs) => {
       res.json(docs)
@@ -42,6 +45,10 @@ router.post('/ex/update', (req, res) => {
     sprice: form.sprice || '',
     maxprice: form.maxprice || 0,
     whenfprice: form.whenfprice || 0,
+    selectcod: form.selectcod || 1,
+    expressUrl: form.expressUrl || '',
+    isSelect: form.isSelect || true,
+    logo: form.logo || '',
     date_start: new Date(Date.parse(form.date_start)) || new Date(),
   }
 
@@ -88,6 +95,29 @@ router.get('/ex/search', (req, res) => {
   ExpressModel.paginate(conditions, options, (err, result) => {
     res.json(result)
   })
+})
+
+router.put('/ex/select', (req, res) => {
+  let form = req.body
+
+  ExpressModel.updateMany(
+    {}, // ค้นหาทุกเอนทิตี
+    { isSelectEx: false }, // เปลี่ยน isSelectEx เป็น false สำหรับทุกเอนทิตี
+    { multi: true } // อัปเดตหลายเอนทิตี
+  )
+    .then(() =>
+      // อัปเดตสถานะ isSelectEx สำหรับเอนทิตีที่ถูกเลือก
+      ExpressModel.updateOne(
+        { _id: form._id }, // ค้นหาเอนทิตีที่ตรงกับ idToSelect
+        { isSelectEx: true } // เปลี่ยน isSelectEx เป็น true
+      )
+    )
+    .then(() => ExpressModel.find({}).exec())
+    .then((updatedData) => res.json(updatedData))
+    .catch((error) => {
+      console.error(error)
+      res.status(500).send('Internal Server Error')
+    })
 })
 
 export default router

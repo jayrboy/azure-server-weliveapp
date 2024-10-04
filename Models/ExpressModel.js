@@ -7,7 +7,11 @@ let expressSchema = new mongoose.Schema(
     sprice: Number,
     maxprice: Number,
     whenfprice: Number,
+    selectcod: Number,
     date_start: Date,
+    expressUrl: String,
+    isSelectEx: Boolean,
+    logo: String,
   },
   { timestamps: true }
 )
