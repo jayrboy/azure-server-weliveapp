@@ -109,7 +109,7 @@ export const search = async (req, res) => {
 
     let options = {
       page: req.query.page || 1, // เพจปัจจุบัน
-      limit: 15, // แสดงผลหน้าละ 15 รายการ
+      limit: 5, // แสดงผลหน้าละ 5 รายการ
     }
 
     const result = await Product.paginate(conditions, options)
