@@ -120,4 +120,14 @@ router.put('/ex/select', (req, res) => {
     })
 })
 
+router.get('/ex/url', (req, res) => {
+  ExpressModel.findOne({ isSelectEx: true })
+    .exec()
+    .then((doc) => res.status(200).json(doc.expressUrl))
+    .catch((error) => {
+      console.error(error)
+      res.status(500).send('Internal Server Error')
+    })
+})
+
 export default router
