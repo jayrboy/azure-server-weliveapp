@@ -73,33 +73,70 @@ const router = express.Router()
  *                       description: List of user scopes
  */
 router.post('/fb-sdk', async (req, res) => {
-  let form = req.body
-  let userData = {
-    username: req.body.id,
-    name: req.body.name,
-    picture: req.body.picture,
-    email: req.body.email,
-  }
-
   const userAccessToken = await getUserLongLivedAccessToken(req.query.token)
   const appAccessToken = await getAppAccessToken()
 
-  // Generate appsecret_proof
-  const appSecretProof = generateAppSecretProof(userAccessToken)
-  console.log('App Secret Proof:', appSecretProof)
+  // Generate appsecret_proof for ID convert to PSID (Messenger)
+  // const appSecretProof = generateAppSecretProof(userAccessToken)
+  // console.log('App Secret Proof :', appSecretProof)
 
   const scopes = await debugToken(appAccessToken, userAccessToken)
   const pages = await getPagesBasedOnToken(userAccessToken)
 
-  let user = await User.findOneAndUpdate(
-    { username: form.id },
-    { $set: { ...userData, userAccessToken, pages } },
-    { new: true, useFindAndModify: false, upsert: true }
-  )
+  let form = req.body
+  let userData
+  let payload
+  const userExisting = await User.findOne({ username: form.id })
 
-  let payload = {
-    user,
-    scopes,
+  if (!userExisting) {
+    userData = {
+      username: req.body.id,
+      name: req.body.name,
+      picture: req.body.picture,
+      email: req.body.email,
+      userAccessToken: userAccessToken,
+      pages: pages, //! new pages on Graph API (Facebook)
+    }
+    let user = await User.findOneAndUpdate({ username: form.id }, userData, {
+      useFindAndModify: false,
+    })
+    payload = {
+      user: {
+        _id: user._id,
+        username: user.username,
+        name: user.name,
+        email: user.email,
+        picture: user.picture,
+        role: user.role,
+        userAccessToken: user.userAccessToken,
+        pages: user.pages,
+      },
+      scopes,
+    }
+  } else {
+    userData = {
+      username: req.body.id,
+      name: req.body.name,
+      picture: req.body.picture,
+      email: req.body.email,
+      userAccessToken: userAccessToken,
+    }
+    let user = await User.findOneAndUpdate({ username: form.id }, userData, {
+      useFindAndModify: false,
+    })
+    payload = {
+      user: {
+        _id: user._id,
+        username: user.username,
+        name: user.name,
+        email: user.email,
+        picture: user.picture,
+        role: user.role,
+        userAccessToken: user.userAccessToken,
+        pages: user.pages, //! used pages existing in Database
+      },
+      scopes,
+    }
   }
 
   jwt.sign(
@@ -111,8 +148,7 @@ router.post('/fb-sdk', async (req, res) => {
       res.json({ token, payload })
     }
   )
-});
-
+})
 
 /**
  * @swagger

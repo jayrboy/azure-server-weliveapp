@@ -160,21 +160,30 @@ export const exportExcel = async (req, res) => {
   }
 }
 
-export const importExcel = async (req, res) => {
-  const file = req.files.file // ใช้ multer สำหรับจัดการไฟล์อัปโหลด
-  const reader = new FileReader()
+export const importExcel = (req, res) => {
+  // console.log(req.body)
+  let jsonData = req.body
 
-  reader.onload = async (e) => {
-    const data = new Uint8Array(e.target.result)
-    const workbook = XLSX.read(data, { type: 'array' })
-    const firstSheetName = workbook.SheetNames[0]
-    const worksheet = workbook.Sheets[firstSheetName]
-    const jsonData = XLSX.utils.sheet_to_json(worksheet)
+  // แปลง date_added ให้เป็น Date object
+  jsonData = jsonData.map((item) => ({
+    ...item,
+    date_added: new Date(item.date_added) || new Date(),
+    limit: 0,
+    cf: 0,
+    paid: 0,
+    remaining: 0,
+    remaining_cf: 0,
+    isDelete: false,
+  }))
 
-    // บันทึกข้อมูลผู้ใช้ลง MongoDB
-    await Product.insertMany(jsonData)
-    res.status(200).send('นำเข้าข้อมูลสำเร็จ')
-  }
-
-  reader.readAsArrayBuffer(file)
+  // บันทึกข้อมูลผู้ใช้ลง MongoDB
+  Product.insertMany(jsonData)
+    .then((docs) => {
+      console.log('docs inserted')
+      res.status(200).json(docs)
+    })
+    .catch((err) => {
+      console.error('Error inserting data:', err)
+      res.status(500).send(false)
+    })
 }
