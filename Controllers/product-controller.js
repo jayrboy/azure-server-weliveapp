@@ -1,7 +1,9 @@
 import Product from '../Models/Product.js'
+import ExcelJS from 'exceljs'
+import fs from 'fs'
 
 export const getAll = (req, res) => {
-  Product.find()
+  Product.find({ isDelete: false })
     .exec()
     .then((docs) => res.status(200).json(docs))
 }
@@ -28,6 +30,7 @@ export const create = (req, res) => {
     paid: form.paid || 0,
     remaining_cf: form.remaining_cf || 0,
     remaining: form.stock_quantity,
+    isDelete: false,
     date_added: new Date(Date.parse(form.date_added)) || new Date(),
   }
   // console.log(data)
@@ -54,7 +57,8 @@ export const update = (req, res) => {
     stock_quantity: form.stock_quantity,
     cost: form.cost,
     limit: form.limit,
-    remaining: form.stock_quantity,
+    remaining: (form.remaining += form.stock_quantity),
+    remaining_cf: (form.remaining_cf += form.stock_quantity),
     date_added: new Date(Date.parse(form.date_added)),
   }
 
@@ -74,21 +78,18 @@ export const update = (req, res) => {
     .catch((err) => res.json({ message: err.message }))
 }
 
-export const cutStock = (req, res) => {
-  let form = req.body
-  console.log('Receive REQ By CutStock in Product  ============= > ', req)
-  console.log('Receive form By CutStock in Product  ============= > ', form)
-  // Product.findById()
-}
 export const remove = (req, res) => {
   let form = req.body
   // console.log(form)
+  let data = {
+    isDelete: true,
+  }
 
-  Product.findByIdAndDelete(form._id, { useFindAndModify: false })
+  Product.findByIdAndUpdate(form._id, data, { useFindAndModify: false })
     .exec()
     .then(() => {
       // เมื่อลบข้อมูลสำเร็จ ทำการค้นหาข้อมูลสินค้าทั้งหมดใหม่
-      Product.find()
+      Product.find({ isDelete: false })
         .exec()
         .then((docs) => res.json(docs))
     })
@@ -103,8 +104,15 @@ export const search = async (req, res) => {
     let pattern = new RegExp(q, 'ig')
 
     // ค้นหาจากฟิลด์ name และ remaining
+    // let conditions = {
+    //   $or: [{ name: { $regex: pattern } }, { code: { $regex: pattern } }],
+    // }
+
     let conditions = {
-      $or: [{ name: { $regex: pattern } }, { code: { $regex: pattern } }],
+      $and: [
+        { isDelete: false },
+        { $or: [{ name: { $regex: pattern } }, { code: { $regex: pattern } }] },
+      ],
     }
 
     let options = {
@@ -117,4 +125,56 @@ export const search = async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
+}
+
+export const exportExcel = async (req, res) => {
+  try {
+    const products = await Product.find({}).lean() // ใช้ lean() เพื่อให้ได้ Object ธรรมดา
+
+    const workbook = new ExcelJS.Workbook()
+    const worksheet = workbook.addWorksheet('Products')
+
+    // เพิ่ม header
+    worksheet.columns = [
+      { header: 'ID', key: '_id', width: 30 },
+      { header: 'Name', key: 'name', width: 30 },
+      { header: 'Price', key: 'price', width: 30 },
+      { header: 'Quantity', key: 'stock_quantiy', width: 30 },
+    ]
+
+    // เพิ่มข้อมูลลงใน worksheet
+    products.forEach((p) => {
+      worksheet.addRow(p)
+    })
+
+    // ส่งไฟล์ Excel กลับไปยังผู้ใช้
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    res.setHeader('Content-Disposition', 'attachment; filename=products.xlsx')
+    await workbook.xlsx.write(res)
+    res.end()
+  } catch (error) {
+    res.status(500).send({ error: 'Error fetching products' })
+  }
+}
+
+export const importExcel = async (req, res) => {
+  const file = req.files.file // ใช้ multer สำหรับจัดการไฟล์อัปโหลด
+  const reader = new FileReader()
+
+  reader.onload = async (e) => {
+    const data = new Uint8Array(e.target.result)
+    const workbook = XLSX.read(data, { type: 'array' })
+    const firstSheetName = workbook.SheetNames[0]
+    const worksheet = workbook.Sheets[firstSheetName]
+    const jsonData = XLSX.utils.sheet_to_json(worksheet)
+
+    // บันทึกข้อมูลผู้ใช้ลง MongoDB
+    await Product.insertMany(jsonData)
+    res.status(200).send('นำเข้าข้อมูลสำเร็จ')
+  }
+
+  reader.readAsArrayBuffer(file)
 }

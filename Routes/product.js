@@ -6,6 +6,8 @@ import {
   update,
   remove,
   search,
+  importExcel,
+  exportExcel,
 } from '../Controllers/product-controller.js'
 import { auth } from '../middleware/auth.js'
 
@@ -152,7 +154,7 @@ router.put('/product', auth, update)
  *          description: Not found
  */
 //TODO: สำหรับลบใน product ตอน create daily stock
-router.delete('/product/delete', auth, remove)
+router.delete('/product/delete', remove)
 
 /**
  * @swagger
@@ -188,6 +190,10 @@ router.delete('/product/delete', auth, remove)
  *          description: Internal server error
  */
 router.get('/product/search', auth, search)
+
+router.get('/product/excel/export', exportExcel)
+
+router.post('/product/excel/import', importExcel)
 
 export default router
 

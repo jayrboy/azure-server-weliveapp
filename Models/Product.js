@@ -17,6 +17,7 @@ let productSchema = new mongoose.Schema(
     remaining_cf: Number,
     remaining: Number,
     date_added: Date,
+    isDelete: Boolean,
   },
   { timestamps: true }
 )
