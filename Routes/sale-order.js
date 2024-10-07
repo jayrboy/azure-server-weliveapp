@@ -14,6 +14,7 @@ import {
   downloadPDF,
   printPDF,
   ccOrder,
+  ccOrderV2,
 } from '../Controllers/sale-order-controller.js'
 import { auth } from '../middleware/auth.js'
 import { upload } from '../middleware/upload.js'
@@ -139,6 +140,8 @@ router.put('/sale-order/payment', payment)
 router.put('/sale-order/reject', reject)
 
 router.put('/sale-order/cc', ccOrder)
+
+router.delete('/sale-order/delete', ccOrderV2)
 
 /**
  * @swagger

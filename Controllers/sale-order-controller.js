@@ -233,64 +233,70 @@ export const create = async (req, res) => {
       return res.status(400).json({ errors: errors.array() })
     }
 
-    let existingCustomer = await Customer.findOne({ idFb: req.body.idFb })
+    let form = req.body
+    // console.log(form)
+
+    let existingCustomer = await Customer.findOne({ idFb: form.idFb }).exec()
+
     if (!existingCustomer) {
       let customer = {
-        idFb: req.body.idFb || '',
-        nameFb: req.body.nameFb || '',
-        name: req.body.name || '',
-        email: req.body.email || '',
-        picture_profile: req.body.picture_profile || '',
+        idFb: form.idFb || '',
+        nameFb: form.nameFb || '',
+        name: form.name || '',
+        email: form.email || '',
+        picture_profile: form.picture_profile || '',
       }
-      await Customer.create(customer)
+      Customer.create(customer)
     }
 
-    let form = req.body
+    // console.log('Customer Existed :', existingCustomer) // null
+
     let data = {
       idFb: form.idFb || '',
       nameFb: form.nameFb || '',
       name: form.name || '',
-      email: form.email || '',
-      picture_profile: form.picture_profile || [],
       orders: form.orders || [],
-      picture_payment: form.picture_payment || '',
-      address: form.address || '',
-      province: form.province || '',
-      amphure: form.amphure || '',
-      district: form.district || '',
-      postcode: form.postcode || '',
-      tel: form.tel || '',
-      isPayment: form.isPayment || false,
-      complete: form.complete || false,
-      sended: form.sended || false,
-      isDelete: form.isDelete || false,
-      express: form.express || '',
-      vendorId: form.vendorId || '65feb6291f7e46ed630b4e20', // ID ผู้ขายสินค้ารายการนั้นๆ
-      updateBy: form.updateBy || '',
-      date_added: form.date_added
-        ? new Date(Date.parse(form.date_added))
-        : new Date(),
+      vendorId: form.vendorId || '668a6523db79f886466bce46', // ID ผู้ขายสินค้ารายการนั้นๆ
+      email: '',
+      picture_profile: [],
+      picture_payment: '',
+      address: '',
+      province: '',
+      amphure: '',
+      district: '',
+      postcode: '',
+      tel: '',
+      express: '',
+      isPayment: false,
+      complete: false,
+      sended: false,
+      isDelete: false,
+      updateBy: '',
+      date_added: new Date(),
     }
 
-    let existingOrder = await Order.findOne({ idFb: data.idFb })
+    // console.log('Save Data :', data)
 
-    if (existingOrder) {
-      await Order.findOneAndUpdate(
-        { idFb: existingOrder.idFb },
+    let existingOrder = await Order.findOne({ idFb: form.idFb }).exec()
+
+    // console.log('Order Existed :', existingOrder) // null
+
+    if (!existingOrder) {
+      Order.create(data).then((doc) => res.status(200).json(doc))
+    } else {
+      Order.findOneAndUpdate(
+        { idFb: form.idFb },
         { $push: { orders: data.orders[0] } },
         { useFindAndModify: false }
-      )
-      existingOrder = await Order.findById(existingOrder._id)
-      res.status(200).json(existingOrder)
-    } else {
-      const newOrder = await Order.create(data)
-      res.status(200).json(newOrder)
+      ).then(() => {
+        Order.findById(existingOrder._id).then((doc) =>
+          res.status(200).json(doc)
+        )
+      })
     }
   } catch (error) {
-    console.error('Error processing request: ', error)
-    res
-      .status(500)
-      .send({ message: 'Internal Server Error', error: error.message })
+    // console.error('Error processing request :', error)
+    res.status(500).json({ message: '500 Internal Server Error' })
   }
 }
 
@@ -588,6 +594,20 @@ export const ccOrder = (req, res) => {
       Order.findOne({ idFb: form.idFb })
         .exec()
         .then((docs) => res.status(200).json(docs))
+    })
+    .catch((error) => res.status(500).json({ message: error }))
+}
+
+export const ccOrderV2 = (req, res) => {
+  // console.log(req.body)
+  let form = req.body
+
+  Order.findOneAndDelete({ idFb: form.idFb })
+    .exec()
+    .then(() => {
+      Customer.findOneAndDelete({ idFb: form.idFb })
+        .exec()
+        .then(() => res.status(200).send(true))
     })
     .catch((error) => res.status(500).json({ message: error }))
 }

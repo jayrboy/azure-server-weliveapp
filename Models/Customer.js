@@ -2,7 +2,7 @@ import mongoose from 'mongoose'
 
 let customerSchema = new mongoose.Schema(
   {
-    idFb: Number,
+    idFb: String,
     nameFb: String,
     name: String,
     email: String,
