@@ -8,6 +8,7 @@ import {
   search,
   importExcel,
   exportExcel,
+  getProductsHistory,
 } from '../Controllers/product-controller.js'
 import { auth } from '../middleware/auth.js'
 
@@ -69,6 +70,8 @@ router.post('/product', create)
  *          description: Not found
  */
 router.get('/product', auth, getAll)
+
+router.get('/product/history', getProductsHistory)
 
 /**
  * @swagger

@@ -1,6 +1,7 @@
 import Product from '../Models/Product.js'
 import ExcelJS from 'exceljs'
 import fs from 'fs'
+import ProductHistory from '../Models/ProductHistory.js'
 
 export const getAll = (req, res) => {
   Product.find({ isDelete: false })
@@ -68,15 +69,29 @@ export const update = (req, res) => {
 
   // console.log(data)
 
+  let dataHistory = {
+    product_id: form._id,
+    product_name: form.name,
+    updateBy: form.updateBy,
+    price_old: form.price_old,
+    price_new: form.price,
+    stock_quantity_old: form.stock_quantity_old,
+    stock_quantity_new: form.stock_quantity,
+    remarks: form.remarks || '',
+  }
+
   Product.findByIdAndUpdate(form._id, data, { useFindAndModify: false })
     .exec()
     .then(() => {
       //หลังการอัปเดต ก็อ่านข้อมูลอีกครั้ง แล้วส่งไปแสดงผลที่ฝั่งโลคอลแทนข้อมูลเดิม
+      console.log('Document updated')
       Product.find()
         .exec()
         .then((docs) => {
-          console.log('Document updated')
-          res.json(docs)
+          ProductHistory.create(dataHistory).then(() => {
+            console.log('History created')
+            res.json(docs)
+          })
         })
     })
     .catch((err) => res.json({ message: err.message }))
@@ -190,4 +205,12 @@ export const importExcel = (req, res) => {
       console.error('Error inserting data:', err)
       res.status(500).send(false)
     })
+}
+
+export const getProductsHistory = (req, res) => {
+  // res.send('Product History')
+  ProductHistory.find({})
+    .exec()
+    .then((docs) => res.status(200).json(docs))
+    .catch((error) => res.status(500).json({ message: error.message }))
 }
