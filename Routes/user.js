@@ -4,7 +4,7 @@ import {
   getById,
   updateRole,
   createBankAccount,
-  updateUser,
+  updateBankAccount,
   getBankAccount,
 } from '../Controllers/user-controller.js'
 import { auth } from '../middleware/auth.js'
@@ -23,6 +23,6 @@ router.post('/user/bank-account/:id', auth, createBankAccount)
 
 router.get('/user/bank-account/:id', getBankAccount)
 
-router.put('/user', auth, updateUser)
+router.put('/user/bank-account', auth, updateBankAccount)
 
 export default router

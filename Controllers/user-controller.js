@@ -81,26 +81,19 @@ export const createBankAccount = (req, res) => {
     })
 }
 
-export const updateUser = (req, res) => {
-  let form = req.body
+export const updateBankAccount = (req, res) => {
+  // console.log('Body :', req.body.bank_account)
+  // console.log('Query :', req.query.username)
+
   let data = {
-    username: form.username,
-    name: form.name,
-    role: form.role,
-    picture: form.picture,
-    pages: form.pages,
-    bank_account: form.bank_account,
+    bank_account: req.body.bank_account,
   }
 
-  User.findByIdAndUpdate(form._id, data, { useFindAndModify: false })
-    .select('-password')
+  User.findOneAndUpdate({ username: req.query.username }, data, {
+    useFindAndModify: false,
+  })
     .exec()
-    .then(() => {
-      User.findById(form._id).then((docs) => {
-        //   console.log(docs)
-        res.json(docs)
-      })
-    })
+    .then(() => res.status(200).json(true))
 }
 
 export const getBankAccount = (req, res) => {
