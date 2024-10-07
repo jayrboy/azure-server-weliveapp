@@ -19,7 +19,7 @@ router.get('/user/:id', getById)
 
 router.post('/user/change-role', auth, updateRole)
 
-router.post('/user/bank-account/:id', auth, createBankAccount)
+router.post('/user/bank-account', auth, createBankAccount)
 
 router.get('/user/bank-account/:id', getBankAccount)
 

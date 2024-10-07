@@ -53,32 +53,29 @@ export const updateRole = async (req, res) => {
 }
 
 export const createBankAccount = (req, res) => {
-  const { id } = req.params
+  // console.log('Body :', req.body)
+  // console.log('Query :', req.query.username)
+
   let form = req.body
+
   let data = {
-    id: form.id || nanoid(),
+    id: nanoid(),
     bankID: form.bankID || '',
     bank: form.bank || '',
     bankName: form.bankName || '',
     promptPay: form.promptPay || '',
     qrCode: form.qrCode || '',
+    isActive: false,
   }
-  // console.log('ID :', id)
   // console.log('Data :', data)
 
-  User.findByIdAndUpdate(
-    id,
+  User.findOneAndUpdate(
+    { username: req.query.username },
     { $push: { bank_account: data } },
     { useFindAndModify: false }
   )
-    .select('-password')
     .exec()
-    .then(() => {
-      User.findById(id).then((docs) => {
-        //   console.log(docs)
-        res.json(docs)
-      })
-    })
+    .then(() => res.status(200).json(true))
 }
 
 export const updateBankAccount = (req, res) => {
