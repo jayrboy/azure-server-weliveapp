@@ -175,8 +175,8 @@ export const importExcel = (req, res) => {
     limit: 0,
     cf: 0,
     paid: 0,
-    remaining: 0,
-    remaining_cf: 0,
+    remaining: item.stock_quantity,
+    remaining_cf: item.stock_quantity,
     isDelete: false,
   }))
 
