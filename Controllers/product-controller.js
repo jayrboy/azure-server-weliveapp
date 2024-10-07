@@ -28,8 +28,8 @@ export const create = (req, res) => {
     limit: form.limit || 0,
     cf: form.cf || 0,
     paid: form.paid || 0,
-    remaining_cf: form.remaining_cf || 0,
-    remaining: form.stock_quantity,
+    remaining_cf: form.stock_quantity || 0,
+    remaining: form.stock_quantity || 0,
     isDelete: false,
     date_added: new Date(Date.parse(form.date_added)) || new Date(),
   }
@@ -47,9 +47,13 @@ export const create = (req, res) => {
 }
 
 export const update = (req, res) => {
-  console.log('product Update Method ')
-  // console.log(req.body)
+  console.log(req.body)
   let form = req.body
+
+  // คำนวณยอดคงเหลือใหม่
+  let newRemaining = form.stock_quantity // สามารถปรับคำนวณตามต้องการ เช่น หักค่าที่จ่ายไปแล้ว
+  let newRemainingCf = newRemaining - form.paid // คำนวณยอดคงเหลือที่จ่ายแล้ว
+
   let data = {
     code: form.code,
     name: form.name,
@@ -57,9 +61,9 @@ export const update = (req, res) => {
     stock_quantity: form.stock_quantity,
     cost: form.cost,
     limit: form.limit,
-    remaining: (form.remaining += form.stock_quantity),
-    remaining_cf: (form.remaining_cf += form.stock_quantity),
-    date_added: new Date(Date.parse(form.date_added)),
+    remaining: newRemaining,
+    remaining_cf: newRemainingCf,
+    date_added: form.date_added,
   }
 
   // console.log(data)
