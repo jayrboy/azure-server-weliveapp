@@ -4,7 +4,7 @@ import crypto from 'crypto'
 const APP_ID = process.env.APP_ID
 const APP_SECRET = process.env.APP_SECRET
 
-const FACEBOOK_GRAPH_API = 'https://graph.facebook.com/v20.0'
+const FACEBOOK_GRAPH_API = 'https://graph.facebook.com/v21.0'
 
 //? https://developers.facebook.com/docs/facebook-login/guides/access-tokens/get-long-lived/?locale=th_TH
 export const getUserLongLivedAccessToken = async (token) => {

@@ -23,6 +23,7 @@ let orderSchema = new mongoose.Schema(
     isDelete: Boolean,
     vendorId: String,
     updateBy: String,
+    psidFb: String,
   },
   { timestamps: true }
 )

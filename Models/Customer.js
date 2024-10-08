@@ -10,6 +10,7 @@ let customerSchema = new mongoose.Schema(
       type: Array,
       default: [{ data: { url: 'no-profile.jpg' } }],
     },
+    psidFb: String,
   },
   { timestamps: true }
 )

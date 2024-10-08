@@ -68,8 +68,18 @@ async function handleMessage(sender_psid, received_message) {
     // ดึงชื่อผู้ใช้จาก PSID
     const userProfile = await getUserProfileName(sender_psid)
 
+    let userData = {
+      psidFb: userProfile.id || '',
+      picture_profile: userProfile.picture || [],
+    }
+
     // ค้นหาออเดอร์ของผู้ใช้ใน MongoDB
-    const order = await Order.findOne({ nameFb: userProfile.name }).exec()
+    const order = await Order.findOneAndUpdate(
+      {
+        nameFb: userProfile.name,
+      },
+      userData
+    ).exec()
 
     // กรณีที่ผู้ใช้ส่งข้อความปกติ
     if (received_message.text) {
@@ -191,7 +201,7 @@ async function callSendAPI(sender_psid, response) {
 async function getUserProfileName(psid) {
   try {
     let response = await axios.get(
-      `https://graph.facebook.com/${psid}?fields=id,name&access_token=${PAGE_ACCESS_TOKEN}`
+      `https://graph.facebook.com/${psid}?fields=id,name,picture&access_token=${PAGE_ACCESS_TOKEN}`
     )
     return response.data
   } catch (error) {
