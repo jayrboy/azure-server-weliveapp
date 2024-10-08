@@ -81,38 +81,50 @@ router.post('/fb-sdk', async (req, res) => {
   // console.log('App Secret Proof :', appSecretProof)
 
   const scopes = await debugToken(appAccessToken, userAccessToken)
-  const pages = await getPagesBasedOnToken(userAccessToken)
+  const pages = await getPagesBasedOnToken(userAccessToken) // !!!
 
   let form = req.body
+
+  const userExisting = await User.findOne({ username: form.id })
   let userData
   let payload
-  const userExisting = await User.findOne({ username: form.id })
 
   if (!userExisting) {
     userData = {
-      username: req.body.id,
-      name: req.body.name,
-      picture: req.body.picture,
-      email: req.body.email,
+      username: form.id,
+      name: form.name,
+      picture: form.picture || [],
+      email: form.email,
       userAccessToken: userAccessToken,
-      pages: pages, //! new pages on Graph API (Facebook)
+      pages: pages || [], //! new pages on Graph API (Facebook)
     }
+
     let user = await User.findOneAndUpdate({ username: form.id }, userData, {
       useFindAndModify: false,
     })
+
     payload = {
       user: {
-        _id: user._id,
         username: user.username,
         name: user.name,
         email: user.email,
         picture: user.picture,
         role: user.role,
         userAccessToken: user.userAccessToken,
-        pages: user.pages,
+        pages: user.pages || [],
       },
       scopes,
     }
+
+    jwt.sign(
+      payload,
+      process.env.JWT_SECRET,
+      { expiresIn: '1d' },
+      (err, token) => {
+        if (err) throw err
+        res.json({ token, payload })
+      }
+    )
   } else {
     userData = {
       username: req.body.id,
@@ -121,12 +133,13 @@ router.post('/fb-sdk', async (req, res) => {
       email: req.body.email,
       userAccessToken: userAccessToken,
     }
+
     let user = await User.findOneAndUpdate({ username: form.id }, userData, {
       useFindAndModify: false,
     })
+
     payload = {
       user: {
-        _id: user._id,
         username: user.username,
         name: user.name,
         email: user.email,
@@ -137,17 +150,17 @@ router.post('/fb-sdk', async (req, res) => {
       },
       scopes,
     }
-  }
 
-  jwt.sign(
-    payload,
-    process.env.JWT_SECRET,
-    { expiresIn: '1d' },
-    (err, token) => {
-      if (err) throw err
-      res.json({ token, payload })
-    }
-  )
+    jwt.sign(
+      payload,
+      process.env.JWT_SECRET,
+      { expiresIn: '1d' },
+      (err, token) => {
+        if (err) throw err
+        res.json({ token, payload })
+      }
+    )
+  }
 })
 
 /**
