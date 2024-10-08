@@ -85,7 +85,7 @@ async function handleMessage(sender_psid, received_message) {
     if (received_message.text) {
       if (order) {
         response = {
-          text: `สวัสดีคุณ ${order.name} คุณมีคำสั่งซื้อ. หากต้องการรายละเอียดเพิ่มเติมกรุณาเข้าลิงก์: https://weliveapp.netlify.app/order/${order._id}`,
+          text: `สวัสดีคุณ ${userProfile.name} คุณมีคำสั่งซื้อ. หากต้องการรายละเอียดเพิ่มเติมกรุณาเข้าลิงก์: https://weliveapp.netlify.app/order/${order._id}`,
         }
       } else {
         response = {
@@ -107,14 +107,14 @@ async function handleMessage(sender_psid, received_message) {
               template_type: 'generic',
               elements: [
                 {
-                  title: `คุณ ${order.name} มีคำสั่งซื้อ`,
+                  title: `คุณ ${userProfile.name} มีคำสั่งซื้อ`,
                   subtitle: `คลิกลิงก์เพื่อตรวจสอบคำสั่งซื้อเพิ่มเติม`,
                   image_url: attachment_url, // รูปภาพที่ผู้ใช้ส่งมา
                   buttons: [
                     {
                       type: 'web_url',
                       url: `https://weliveapp.netlify.app/order/${order._id}`,
-                      title: 'ดูรายละเอียดคำสั่งซื้อ',
+                      title: 'สินค้าถูกจัดส่ง',
                     },
                     {
                       type: 'postback',
@@ -208,6 +208,41 @@ async function getUserProfileName(psid) {
     console.error('Error fetching user profile:', error)
     throw new Error('Unable to fetch user profile')
   }
+}
+
+export const sendExpressMessage = async (psid, orderID) => {
+  let response = {
+    recipient: { id: psid },
+    message: {
+      attachment: {
+        type: 'template',
+        payload: {
+          template_type: 'generic',
+          elements: [
+            {
+              title: 'สินค้าได้ถูกจัดส่งแล้ว',
+              subtitle: `คลิกลิงก์เพื่อตรวจสอบและติดตามเลขพัสดุ`,
+              image_url:
+                'https://weliveapp.netlify.app/assets/logo-lw_6-qUb.png',
+              buttons: [
+                {
+                  type: 'web_url',
+                  url: `https://weliveapp.netlify.app/order/${orderID}`,
+                  title: 'ดูรายละเอียดคำสั่งซื้อ',
+                },
+              ],
+            },
+          ],
+        },
+      },
+    },
+  }
+
+  return axios.post(
+    `https://graph.facebook.com/v21.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`,
+    response
+  )
+  // return res.data.recipient_id
 }
 
 export default router

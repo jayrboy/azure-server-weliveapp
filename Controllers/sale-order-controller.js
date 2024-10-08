@@ -3,6 +3,8 @@ import Order from '../Models/Order.js'
 import Customer from '../Models/Customer.js'
 import Product from '../Models/Product.js'
 
+import { sendExpressMessage } from '../services/webhooks.js'
+
 import PDFDocument from 'pdfkit'
 import QRCode from 'qrcode'
 import { createCanvas } from 'canvas'
@@ -412,7 +414,7 @@ export const payment = (req, res) => {
     .catch((err) => res.status(404).json({ message: err.message }))
 }
 
-//TODO: ยืนยันการชำระเงิน { complete: true } --------> " ตัดสต็อก "
+// ยืนยันการชำระเงิน { complete: true } --------> " ตัดสต็อก "
 export const setOrderComplete = (req, res) => {
   console.log('Endpoint for changing a status completed')
   const { id } = req.params
@@ -455,33 +457,48 @@ export const setOrderComplete = (req, res) => {
 }
 
 //TODO: ยืนยัน การส่งสินค้า { sended: true } : "ส่งสินค้าแล้ว"
-export const setOrderSended = (req, res) => {
-  console.log('Endpoint for changing status Sended :', req)
-  const { id } = req.params
+export const setOrderSended = async (req, res) => {
+  try {
+    console.log('Endpoint for changing status Sended :', req.params.id)
+    const { id } = req.params
 
-  Order.findById(id)
-    .exec()
-    .then((order) => {
-      if (!order) res.status(404).json({ message: 'Order not found' })
+    let order = await Order.findById(id)
+      .exec()
+      .catch((err) => res.status(404).json({ message: 'Order not fount' }))
 
-      // Toggle the sended status
-      order.sended = !order.sended
-      if (order.sended == false) {
-        order.express = ''
-      } else {
-        // Update express if provided
-        if (req.body.express) {
-          order.express = req.body.express
-        }
+    // Toggle the sended status
+    order.sended = !order.sended
+
+    if (order.sended === false) {
+      order.express = ''
+    } else {
+      // Update express if provided
+      if (req.body.express) {
+        order.express = req.body.express
+
+        // ส่งแชทบอท Messenger ให้ลูกค้าหลัง จากการเปลี่ยนสถานะ { "sended": true }
+        sendExpressMessage(order.psidFb, order._id)
+          .then((res) => {
+            console.log('Message sent successfully :', res.data.recipient_id)
+          })
+          .catch((err) => {
+            console.error('Error sending message:', err)
+          })
       }
+    }
 
-      // Save the updated order
-      order.save().then((updatedOrder) => res.status(200).json(updatedOrder))
-    })
-    .catch((error) => res.status(500).json({ error: error.message }))
+    // Save the updated order
+    await order.save()
+
+    Order.findById(id)
+      .exec()
+      .then((doc) => res.status(200).json(doc))
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
 }
 
-//TODO: แสดงรายงานกราฟแต่ละรายการสินค้า * สินค้าที่ตัดสต็อกเรียบร้อย * สินค้าในออเดอร์ที่ยืนยันการชำระเงินเรียบร้อยแล้ว *
+// แสดงรายงานกราฟแต่ละรายการสินค้า * สินค้าที่ตัดสต็อกเรียบร้อย * สินค้าในออเดอร์ที่ยืนยันการชำระเงินเรียบร้อยแล้ว *
 export const getOrderForReport = async (req, res) => {
   console.log('Endpoint for create report')
   const { id, date, month, year } = req.params // Receive id, date, month, and year from request parameters
