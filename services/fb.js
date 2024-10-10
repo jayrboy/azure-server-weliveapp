@@ -160,3 +160,21 @@ export function generateAppSecretProof(userAccessToken) {
   hmac.update(userAccessToken)
   return hmac.digest('hex')
 }
+
+export const getLiveVideos = async (useAccessToken) => {
+  try {
+    const response = await fetch(
+      `${FACEBOOK_GRAPH_API}/me/live_videos?access_token=${useAccessToken}`
+    )
+
+    const data = await response.json()
+
+    if (response.ok) {
+      return data
+    } else {
+      throw data.error
+    }
+  } catch (error) {
+    throw error
+  }
+}

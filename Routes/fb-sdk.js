@@ -9,9 +9,11 @@ import {
   getPagesBasedOnToken,
   postPageOnToken,
   openLiveVideo,
+  getLiveVideos,
 } from '../services/fb.js'
 
 import User from '../Models/User.js'
+import LiveVideo from '../Models/LiveVideo.js'
 
 // http://localhost:8000/api/fb-sdk
 //
@@ -254,6 +256,30 @@ router.post('/fb-live-video', async (req, res) => {
       accessToken
     )
     res.status(200).json(response)
+  } catch (error) {
+    // res.status(400).json(error)
+    res.status(400).json(false)
+  }
+})
+
+router.post('/fb-live-video/create', async (req, res) => {
+  try {
+    let form = req.body
+    let data = {
+      facebook_id: form.facebook_id,
+      facebook_name: form.facebook_name,
+      title: form.title,
+      status: form.status,
+      embed_html: form.embed_html,
+      live_video_id: form.live_video_id,
+      comments: form.comments,
+    }
+
+    LiveVideo.create(data)
+      .then((doc) => {
+        res.status(200).json(doc)
+      })
+      .catch((error) => res.status(500).json({ message: error.message }))
   } catch (error) {
     // res.status(400).json(error)
     res.status(400).json(false)
