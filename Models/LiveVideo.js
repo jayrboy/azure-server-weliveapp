@@ -9,6 +9,7 @@ let liveVideoSchema = new mongoose.Schema(
     embed_html: String,
     live_video_id: String,
     comments: Array,
+    keyword: String,
   },
   { timestamps: true }
 )
