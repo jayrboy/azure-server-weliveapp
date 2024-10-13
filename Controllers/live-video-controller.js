@@ -44,30 +44,32 @@ export const getById = async (req, res) => {
 export const updateComments = (req, res) => {
   let form = req.body
   let data = {
+    status: 'VOD',
     comments: form.comments || [],
   }
 
-  LiveVideo.findByIdAndUpdate(form.id, data, { useFindAndModify: false })
+  LiveVideo.findOneAndUpdate({ live_video_id: form.live_video_id }, data, {
+    useFindAndModify: false,
+  })
     .exec()
     .then(() => {
-      LiveVideo.findById(form.id)
+      LiveVideo.findOne({ live_video_id: form.live_video_id })
         .exec()
         .then((doc) => res.status(200).json(doc))
     })
     .catch((error) => res.status(500).json({ message: error.message }))
 }
 
-//
 export const updateKeyword = (req, res) => {
   let form = req.body
   let data = {
     keyword: form.keyword || '',
   }
 
-  LiveVideo.findByIdAndUpdate(form.id, data, { useFindAndModify: false })
+  LiveVideo.findByIdAndUpdate(form._id, data, { useFindAndModify: false })
     .exec()
     .then(() => {
-      LiveVideo.findById(form.id)
+      LiveVideo.findById(form._id)
         .exec()
         .then((doc) => res.status(200).json(doc))
     })
