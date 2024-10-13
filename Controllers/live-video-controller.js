@@ -27,7 +27,6 @@ export const createLiveVideo = (req, res) => {
 
 export const getAll = async (req, res) => {
   LiveVideo.find({})
-    .select('-comments')
     .exec()
     .then((docs) => res.status(200).json(docs))
     .catch((error) => res.status(500).json({ message: error.message }))
