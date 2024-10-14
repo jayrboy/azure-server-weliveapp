@@ -8,8 +8,8 @@ let productHistorySchema = new mongoose.Schema(
     updateBy: String,
     price_old: Number,
     price_new: Number,
-    stock_quantity_old: Number,
-    stock_quantity_new: Number,
+    cost_old: Number,
+    cost_new: Number,
     remarks: String,
   },
   { timestamps: true }

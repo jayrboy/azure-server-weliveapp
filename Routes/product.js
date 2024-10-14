@@ -9,6 +9,7 @@ import {
   importExcel,
   exportExcel,
   getProductsHistory,
+  addQuantity,
 } from '../Controllers/product-controller.js'
 import { auth } from '../middleware/auth.js'
 
@@ -197,6 +198,8 @@ router.get('/product/search', auth, search)
 router.get('/product/excel/export', exportExcel)
 
 router.post('/product/excel/import', importExcel)
+
+router.put('/product/add/quantity', addQuantity)
 
 export default router
 

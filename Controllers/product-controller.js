@@ -51,10 +51,6 @@ export const update = (req, res) => {
   console.log(req.body)
   let form = req.body
 
-  // คำนวณยอดคงเหลือใหม่
-  let newRemaining = form.stock_quantity // สามารถปรับคำนวณตามต้องการ เช่น หักค่าที่จ่ายไปแล้ว
-  let newRemainingCf = newRemaining - form.paid // คำนวณยอดคงเหลือที่จ่ายแล้ว
-
   let data = {
     code: form.code,
     name: form.name,
@@ -62,8 +58,8 @@ export const update = (req, res) => {
     stock_quantity: form.stock_quantity,
     cost: form.cost,
     limit: form.limit,
-    remaining: newRemaining,
-    remaining_cf: newRemainingCf,
+    remaining: form.remaining,
+    remaining_cf: form.remaining_cf,
     date_added: form.date_added,
   }
 
@@ -75,9 +71,9 @@ export const update = (req, res) => {
     updateBy: form.updateBy,
     price_old: form.price_old,
     price_new: form.price,
-    stock_quantity_old: form.stock_quantity_old,
-    stock_quantity_new: form.stock_quantity,
-    remarks: form.remarks || '',
+    cost_new: form.cost,
+    cost_old: form.cost_old,
+    remarks: form.remarks || '-',
   }
 
   Product.findByIdAndUpdate(form._id, data, { useFindAndModify: false })
@@ -213,4 +209,38 @@ export const getProductsHistory = (req, res) => {
     .exec()
     .then((docs) => res.status(200).json(docs))
     .catch((error) => res.status(500).json({ message: error.message }))
+}
+
+export const addQuantity = (req, res) => {
+  let form = req.body
+
+  Product.findById(form._id)
+    .then((product) => {
+      if (!product) {
+        return res.status(404).send('Product not found')
+      }
+
+      const updatedQuantity = product.stock_quantity + form.stock_quantity
+      const updatedRemainingCF = product.remaining_cf + form.stock_quantity
+      const updatedRemaining = product.remaining + form.stock_quantity
+
+      let data = {
+        stock_quantity: updatedQuantity,
+        remaining_cf: updatedRemainingCF,
+        remaining: updatedRemaining,
+      }
+      // เพิ่มจำนวนสินค้าใหม่เข้าไป
+
+      Product.findByIdAndUpdate(form._id, data, {
+        useFindAndModify: false,
+      }).then(() =>
+        Product.find()
+          .exec()
+          .then((docs) => res.status(200).json(docs))
+      )
+    })
+    .catch((error) => {
+      console.log({ message: error.message })
+      res.status(500).send(false)
+    })
 }

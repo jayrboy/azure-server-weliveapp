@@ -3,10 +3,18 @@ import DailyStock from '../Models/DailyStock.js'
 
 export const create = (req, res) => {
   let form = req.body
+  let products = form.products || []
+
+  // วนลูปเพื่อเพิ่ม remaining_cf = 0 ให้แต่ละ product
+  products = products.map((product) => ({
+    ...product,
+    cf: 0,
+  }))
+
   let data = {
     status: form.status || 'New',
     chanel: form.chanel || 'Facebook',
-    products: form.products || [],
+    products: products,
     price_total: form.price_total || 0,
     date_added: form.date_added
       ? new Date(Date.parse(form.date_added))
