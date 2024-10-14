@@ -68,9 +68,9 @@ export const updateKeyword = (req, res) => {
   LiveVideo.findByIdAndUpdate(form._id, data, { useFindAndModify: false })
     .exec()
     .then(() => {
-      LiveVideo.findById(form._id)
+      LiveVideo.find({})
         .exec()
-        .then((doc) => res.status(200).json(doc))
+        .then((docs) => res.status(200).json(docs))
     })
     .catch((error) => res.status(500).json({ message: error.message }))
 }
