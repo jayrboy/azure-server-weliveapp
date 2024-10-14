@@ -6,14 +6,17 @@ export const create = (req, res) => {
   let products = form.products || []
 
   // วนลูปเพื่อเพิ่ม remaining_cf = 0 ให้แต่ละ product
-  products = products.map((product) => ({
-    ...product,
+  products = products.map((p) => ({
+    ...p,
     cf: 0,
+    paid: 0,
+    remaining_cf: p.stock_quantity,
+    remaining: p.stock_quantity,
   }))
 
   let data = {
-    status: form.status || 'New',
-    chanel: form.chanel || 'Facebook',
+    status: form.status || 'new',
+    chanel: form.chanel || 'facebook',
     products: products,
     price_total: form.price_total || 0,
     date_added: form.date_added
