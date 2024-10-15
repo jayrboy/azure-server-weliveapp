@@ -101,6 +101,7 @@ router.post('/fb-sdk', async (req, res) => {
 
   let payload = {
     user: {
+      _id: user._id,
       username: user.username,
       name: user.name || '',
       email: user.email || '',
