@@ -8,10 +8,11 @@ export const create = (req, res) => {
   // วนลูปเพื่อเพิ่ม remaining_cf = 0 ให้แต่ละ product
   products = products.map((p) => ({
     ...p,
+    stock_quantity: p.remaining,
     cf: 0,
     paid: 0,
-    remaining_cf: p.stock_quantity,
-    remaining: p.stock_quantity,
+    remaining_cf: p.remaining,
+    remaining: p.remaining,
   }))
 
   let data = {

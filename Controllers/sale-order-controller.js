@@ -237,8 +237,11 @@ export const create = async (req, res) => {
     }
 
     let form = req.body
+    let productToAdd = form.orders[0] // สินค้าที่ต้องการเพิ่ม
+
     // console.log(form)
 
+    // ค้นหาลูกค้าที่มีอยู่แล้ว
     let existingCustomer = await Customer.findOne({ idFb: form.idFb }).exec()
 
     if (!existingCustomer) {
@@ -254,6 +257,7 @@ export const create = async (req, res) => {
 
     // console.log('Customer Existed :', existingCustomer) // null
 
+    // สร้างข้อมูลออเดอร์เริ่มต้น
     let data = {
       idFb: form.idFb || '',
       nameFb: form.nameFb || '',
@@ -280,22 +284,54 @@ export const create = async (req, res) => {
 
     // console.log('Save Data :', data)
 
-    let existingOrder = await Order.findOne({ idFb: form.idFb }).exec()
+    // ค้นหาออเดอร์ที่ยังไม่ไม่ได้ส่งสลิปการชำระเงิน
+    let existingOrder = await Order.findOne({
+      idFb: form.idFb,
+      isPayment: false,
+    }).exec()
 
     // console.log('Order Existed :', existingOrder) // null
 
     if (!existingOrder) {
+      // ถ้าไม่มีออเดอร์ที่ยังไม่ได้ส่งสลิปชำระเงิน ให้สร้างออเดอร์ใหม่
       Order.create(data).then((doc) => res.status(200).json(doc))
     } else {
-      Order.findOneAndUpdate(
-        { idFb: form.idFb },
-        { $push: { orders: data.orders[0] } },
-        { useFindAndModify: false }
-      ).then(() => {
-        Order.findById(existingOrder._id).then((doc) =>
-          res.status(200).json(doc)
+      // ตรวจสอบว่าสินค้ารหัสเดิมมีอยู่ในออเดอร์แล้วหรือไม่
+      let existingProduct = existingOrder.orders.find(
+        (o) => o.id === productToAdd.id
+      )
+
+      if (existingProduct) {
+        // ถ้ามีสินค้ารหัสเดิมอยู่แล้ว ให้อัปเดต quantity ของสินค้านั้น
+        await Order.updateOne(
+          {
+            _id: existingOrder._id,
+            'orders.id': productToAdd.id,
+          },
+          { $inc: { 'orders.$.quantity': productToAdd.quantity } }
         )
-      })
+      } else {
+        // ถ้าไม่มีสินค้ารหัสเดิม ให้เพิ่มสินค้าลงในออเดอร์
+        await Order.updateOne(
+          { _id: existingOrder._id },
+          { $push: { orders: productToAdd } }
+        )
+      }
+
+      // คืนค่าออเดอร์ที่อัปเดตแล้ว
+      let updatedOrder = await Order.findById(existingOrder._id)
+      return res.status(200).json(updatedOrder)
+
+      // ของเก่าสินค้าเดิม สร้างใหม่ ไม่เพิ่มจำนวน
+      // Order.findOneAndUpdate(
+      //   { idFb: form.idFb },
+      //   { $push: { orders: data.orders[0] } },
+      //   { useFindAndModify: false }
+      // ).then(() => {
+      //   Order.findById(existingOrder._id).then((doc) =>
+      //     res.status(200).json(doc)
+      //   )
+      // })
     }
   } catch (error) {
     // console.error('Error processing request :', error)
