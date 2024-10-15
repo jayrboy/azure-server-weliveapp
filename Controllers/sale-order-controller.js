@@ -2,6 +2,7 @@ import { validationResult } from 'express-validator'
 import Order from '../Models/Order.js'
 import Customer from '../Models/Customer.js'
 import Product from '../Models/Product.js'
+import DailyStock from '../Models/DailyStock.js'
 
 import { sendExpressMessage } from '../services/webhooks.js'
 
@@ -414,7 +415,7 @@ export const payment = (req, res) => {
     .catch((err) => res.status(404).json({ message: err.message }))
 }
 
-// ยืนยันการชำระเงิน { complete: true } --------> " ตัดสต็อก "
+//TODO: ยืนยันการชำระเงิน { complete: true } --------> " ตัดสต็อก "
 export const setOrderComplete = (req, res) => {
   console.log('Endpoint for changing a status completed')
   const { id } = req.params
@@ -437,21 +438,47 @@ export const setOrderComplete = (req, res) => {
           .then((p) => {
             if (!p) new Error(`Product with id ${productInOrder.id} not found`)
 
-            // ตัดสต็อกสินค้า และเพิ่ม paid
-            // p.stock_quantity -= productInOrder.quantity
-            p.paid += productInOrder.quantity
-            p.cf += productInOrder.quantity
-            p.remaining_cf -= productInOrder.quantity
-            p.remaining -= productInOrder.quantity
+            // ตัดสต็อกสินค้า และเพิ่ม paid ตามจำนวนสินค้าในออเดอร์
+            const quantityOrdered = productInOrder.quantity // ใช้ quantity ของสินค้าในออเดอร์
+            p.paid += quantityOrdered
+            p.cf += quantityOrdered
+            p.remaining_cf -= quantityOrdered
+            p.remaining -= quantityOrdered
 
             // บันทึกการเปลี่ยนแปลง
             p.save()
           })
       )
     })
+    .then(() => {
+      // อัปเดตสต็อกใน DailyStock
+      return Promise.all(
+        productsInOrder.map((productInOrder) =>
+          DailyStock.findOneAndUpdate(
+            { 'products._id': productInOrder.id, status: 'new' },
+            {
+              $inc: {
+                'products.$.paid': productInOrder.quantity,
+                'products.$.remaining': -productInOrder.quantity,
+              },
+            },
+            { new: true }
+          )
+            .exec()
+            .then((doc) => {
+              if (!doc)
+                throw new Error(
+                  `Daily stock with product id ${productInOrder.id} not found`
+                )
+            })
+        )
+      )
+    })
     .then((doc) => {
-      res.status(200).json(doc)
-      console.log({ message: 'Order completed and stock updated successfully' })
+      res.status(200).json({
+        message: 'Order completed and stock updated successfully',
+        doc,
+      })
     })
     .catch((error) => res.status(500).json({ message: error }))
 }
