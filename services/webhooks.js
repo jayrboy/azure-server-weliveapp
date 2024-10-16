@@ -35,41 +35,23 @@ router.get('/chatbot', (req, res) => {
 })
 
 // POST: /api/webhooks/chatbot
-// POST: /api/webhooks/chatbot
 router.post('/chatbot', (req, res) => {
   let form = req.body
 
   if (form.object === 'page') {
     form.entry.forEach((entry) => {
-      // Check for live video updates
-      if (entry.changes && entry.changes.length > 0) {
-        entry.changes.forEach((change) => {
-          if (change.field === 'live_videos') {
-            const videoStatus = change.value.status
-            const videoId = change.value.id
+      // Get the body of the webhook event
+      let webhook_event = entry.messaging[0]
+      received_updates.unshift(webhook_event)
 
-            if (videoStatus === 'live_stopped') {
-              console.log(`Live video stopped. Video ID: ${videoId}`)
-              // Handle live video stop event here
-            } else if (videoStatus === 'LIVE_NOW') {
-              console.log(`Live video is now live. Video ID: ${videoId}`)
-              // Handle live video now event here
-            }
-          }
-        })
-      }
+      // Get the sender PSID
+      let sender_psid = webhook_event.sender.id
+      console.log('PSID: ', sender_psid)
 
-      // Get the body of the webhook event for Messenger
-      let webhook_event = entry.messaging && entry.messaging[0]
-      if (webhook_event) {
-        let sender_psid = webhook_event.sender.id
-        console.log('PSID: ', sender_psid)
-
-        if (webhook_event.message) {
-          handleMessage(sender_psid, webhook_event.message)
-        } else if (webhook_event.postback) {
-          handlePostBack(sender_psid, webhook_event.postback)
-        }
+      if (webhook_event.message) {
+        handleMessage(sender_psid, webhook_event.message)
+      } else if (webhook_event.postback) {
+        handlePostBack(sender_psid, webhook_event.postback)
       }
     })
     res.status(200).send('EVENT_RECEIVED')
