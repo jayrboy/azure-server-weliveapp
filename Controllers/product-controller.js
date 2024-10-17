@@ -182,7 +182,7 @@ export const importExcel = (req, res) => {
   // แปลง date_added ให้เป็น Date object
   jsonData = jsonData.map((item) => ({
     ...item,
-    date_added: new Date(item.date_added) || new Date(),
+    date_added: new Date(),
     limit: 0,
     cf: 0,
     paid: 0,
