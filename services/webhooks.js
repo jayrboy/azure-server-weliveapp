@@ -78,11 +78,6 @@ async function handleMessage(sender_psid, received_message) {
     // ดึงชื่อผู้ใช้จาก PSID
     const userProfile = await getUserProfileName(sender_psid)
 
-    let userData = {
-      psidFb: userProfile.id || '',
-      picture_profile: userProfile.picture || [],
-    }
-
     // ค้นหาลูกค้าที่มีอยู่แล้ว
     let existingCustomer = await Customer.findOne({
       nameFb: userProfile.name,
@@ -90,24 +85,29 @@ async function handleMessage(sender_psid, received_message) {
 
     if (!existingCustomer) {
       let customer = {
-        idFb: '',
+        idFb: '', // คุณอาจจะต้องการเพิ่มการจัดการ ID ของลูกค้า
         nameFb: userProfile.name || '',
         name: '',
         email: '',
         picture_profile: userProfile.picture || '',
         psidFb: userProfile.id || '',
       }
-      Customer.create(customer)
+      existingCustomer = await Customer.create(customer) // สร้างลูกค้าใหม่
+    }
+
+    let userData = {
+      psidFb: userProfile.id || '',
+      picture_profile: userProfile.picture || [],
     }
 
     // ค้นหาออเดอร์ของผู้ใช้ใน MongoDB
     const order = await Order.findOneAndUpdate(
-      {
-        nameFb: userProfile.name,
-      },
-      userData,
-      { new: true, sort: { createdAt: 1 } } // เรียงลำดับจากเก่าไปใหม่
-    ).exec()
+      { nameFb: userProfile.name }, // ค้นหาเอกสารที่มี nameFb ตรงตามที่กำหนด
+      userData, // อัปเดตข้อมูลที่ต้องการ
+      { sort: { createdAt: -1 }, new: true } // เรียงลำดับตาม createdAt และคืนค่าเอกสารใหม่
+    )
+      .select('-picture_payment')
+      .exec()
 
     // กรณีที่ผู้ใช้ส่งข้อความปกติ
     if (received_message.text) {
