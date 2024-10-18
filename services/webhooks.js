@@ -60,6 +60,15 @@ router.post('/chatbot', (req, res) => {
   }
 })
 
+// POST: /api/webhooks/chatbot
+router.post('/chatbot/live', (req, res) => {
+  let { psidFb, orderID } = req.body
+
+  sendMessageInFacebookLive(psidFb, orderID)
+    .then(() => res.status(200).send('Sent Success'))
+    .catch((error) => res.status(500).send('Chatbot Error :'))
+})
+
 //TODO: Handle Message Events
 async function handleMessage(sender_psid, received_message) {
   let response
@@ -243,6 +252,71 @@ export const sendExpressMessage = async (psid, orderID) => {
     response
   )
   // return res.data.recipient_id
+}
+
+export const sendMessageInFacebookLive = async (psid, orderID) => {
+  try {
+    // ค้นหาออเดอร์จากฐานข้อมูลโดยใช้ orderID
+    const order = await Order.findById(orderID)
+      .select('-picture_payment')
+      .exec()
+
+    if (!order) {
+      throw new Error('Order not found')
+    }
+
+    const { orders, name, tel, address } = order
+
+    // สมมติค่าจัดส่ง
+    const shippingCost = 50
+
+    // คำนวณยอดรวมราคาสินค้าทั้งหมด
+    const totalPrice = orders.reduce(
+      (total, item) => total + item.price * item.quantity,
+      0
+    )
+
+    // เตรียมรายละเอียดสินค้า
+    const productDetails = orders
+      .map(
+        (item) =>
+          `[${item.name} x${item.quantity}] = ${item.price * item.quantity} บาท`
+      )
+      .join('\n')
+
+    let response = {
+      recipient: { id: psid },
+      message: {
+        attachment: {
+          type: 'template',
+          payload: {
+            template_type: 'coupon',
+            title: `ออเดอร์จาก Live สด`,
+            subtitle: `สินค้า: ${productDetails}\nค่าจัดส่ง: ${shippingCost} บาท\nยอดรวม: ${
+              totalPrice + shippingCost
+            } บาท`,
+            coupon_url: `https://weliveapp.netlify.app/order/${order._id}`,
+            coupon_url_button_title: 'ยืนยันออเดอร์',
+            coupon_pre_message: 'ยืนยันการสั่งซื้อของคุณด้านล่าง!',
+            image_url: 'https://weliveapp.netlify.app/assets/logo-lw_6-qUb.png',
+            payload: 'รายละเอียดออเดอร์',
+          },
+        },
+      },
+    }
+
+    // console.log(response.message.attachment.payload)
+
+    console.log('Message sent successfully')
+
+    // ส่งข้อความไปยังผู้ใช้ผ่าน Messenger API
+    return await axios.post(
+      `https://graph.facebook.com/v21.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`,
+      response
+    )
+  } catch (error) {
+    console.error('Error sending message:', error.message)
+  }
 }
 
 export default router
