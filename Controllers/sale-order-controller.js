@@ -409,6 +409,7 @@ export const reject = async (req, res) => {
     let form = req.body
     let data = {
       isDelete: true,
+      isRestore: form.isRestore || false,
       updateBy: form.updateBy,
     }
 
