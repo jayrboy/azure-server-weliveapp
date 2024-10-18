@@ -90,12 +90,12 @@ async function handleMessage(sender_psid, received_message) {
 
     if (!existingCustomer) {
       let customer = {
-        idFb: form.idFb || '',
-        nameFb: form.nameFb || '',
-        name: form.name || '',
-        email: form.email || '',
-        picture_profile: form.picture_profile || '',
-        psidFb: sender_psid || '',
+        idFb: '',
+        nameFb: userProfile.name || '',
+        name: '',
+        email: '',
+        picture_profile: userProfile.picture || '',
+        psidFb: userProfile.id || '',
       }
       Customer.create(customer)
     }
@@ -106,7 +106,7 @@ async function handleMessage(sender_psid, received_message) {
         nameFb: userProfile.name,
       },
       userData,
-      { new: true, sort: { createdAt: -1 } } // เรียงลำดับจากใหม่ไปเก่า
+      { new: true, sort: { createdAt: 1 } } // เรียงลำดับจากเก่าไปใหม่
     ).exec()
 
     // กรณีที่ผู้ใช้ส่งข้อความปกติ
