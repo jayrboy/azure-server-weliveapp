@@ -278,6 +278,7 @@ export const create = async (req, res) => {
       complete: false,
       sended: false,
       isDelete: false,
+      isRestore: false,
       updateBy: '',
       date_added: new Date(),
     }
@@ -288,6 +289,9 @@ export const create = async (req, res) => {
     let existingOrder = await Order.findOne({
       idFb: form.idFb,
       isPayment: false,
+      isDelete: false,
+      complete: false,
+      sended: false,
     }).exec()
 
     // console.log('Order Existed :', existingOrder) // null
@@ -400,21 +404,56 @@ export const remove = (req, res) => {
 }
 
 //! ปฏิเสธออเดอร์ { isDelete: true } : ปฏิเสธ/หมดเวลา
-export const reject = (req, res) => {
-  let form = req.body
-  let data = {
-    isDelete: true,
-    updateBy: form.updateBy,
-  }
+export const reject = async (req, res) => {
+  try {
+    let form = req.body
+    let data = {
+      isDelete: true,
+      updateBy: form.updateBy,
+    }
 
-  Order.findByIdAndUpdate(form._id, data, { useFindAndModify: false })
-    .exec()
-    .then(() => {
-      Order.findById(form._id)
-        .exec()
-        .then((docs) => res.status(200).json(docs))
-    })
-    .catch((err) => res.status(500).send(false))
+    let productsInOrder = form.orders
+    // Find the DailyStock with status 'new'
+    DailyStock.findOne({ status: 'new' })
+      .exec()
+      .then(async (dailyStock) => {
+        if (!dailyStock) {
+          return res.status(404).json({ message: 'Daily Stock not found' })
+        }
+
+        // Loop through the products in the order and update the remaining_cf
+        dailyStock.products = dailyStock.products.map((product) => {
+          let productInOrder = productsInOrder.find(
+            (p) => p.id === product._id.toString()
+          )
+          if (productInOrder) {
+            // Update the remaining_cf for the matching product
+            product.remaining_cf += productInOrder.quantity
+            console.log(
+              `Updated remaining_cf for product ${product.name}: ${product.remaining_cf}`
+            )
+          }
+          return product // Return the product with updated remaining_cf
+        })
+
+        // Update the DailyStock document using findByIdAndUpdate
+        await DailyStock.findByIdAndUpdate(
+          dailyStock._id, // The ID of the DailyStock to update
+          { products: dailyStock.products }, // The updated products array
+          { new: true, useFindAndModify: false } // Return the updated document
+        )
+      })
+
+    // Update the order with isDelete = true
+    await Order.findByIdAndUpdate(form._id, data, { useFindAndModify: false })
+
+    // Retrieve the updated order and respond
+    let updatedOrder = await Order.findById(form._id).exec()
+    res.status(200).json(updatedOrder)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ success: false, error: err.message })
+  }
 }
 
 // อัปเดตข้อมูลออเดอร์ลูกค้าที่สั่งซื้อ Order V2 "application/json" { isPayment: true }

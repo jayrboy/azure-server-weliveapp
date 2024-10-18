@@ -24,6 +24,10 @@ let orderSchema = new mongoose.Schema(
     vendorId: String,
     updateBy: String,
     psidFb: String,
+    isRestore: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 )
