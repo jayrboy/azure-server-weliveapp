@@ -2,6 +2,7 @@ import 'dotenv/config'
 import express from 'express'
 import axios from 'axios'
 import Order from '../Models/Order.js'
+import Customer from '../Models/Customer.js'
 
 const router = express.Router()
 
@@ -82,12 +83,30 @@ async function handleMessage(sender_psid, received_message) {
       picture_profile: userProfile.picture || [],
     }
 
+    // ค้นหาลูกค้าที่มีอยู่แล้ว
+    let existingCustomer = await Customer.findOne({
+      nameFb: userProfile.name,
+    }).exec()
+
+    if (!existingCustomer) {
+      let customer = {
+        idFb: form.idFb || '',
+        nameFb: form.nameFb || '',
+        name: form.name || '',
+        email: form.email || '',
+        picture_profile: form.picture_profile || '',
+        psidFb: sender_psid || '',
+      }
+      Customer.create(customer)
+    }
+
     // ค้นหาออเดอร์ของผู้ใช้ใน MongoDB
     const order = await Order.findOneAndUpdate(
       {
         nameFb: userProfile.name,
       },
-      userData
+      userData,
+      { new: true, sort: { createdAt: -1 } } // เรียงลำดับจากใหม่ไปเก่า
     ).exec()
 
     // กรณีที่ผู้ใช้ส่งข้อความปกติ
@@ -123,7 +142,7 @@ async function handleMessage(sender_psid, received_message) {
                     {
                       type: 'web_url',
                       url: `https://weliveapp.netlify.app/order/${order._id}`,
-                      title: 'สินค้าถูกจัดส่ง',
+                      title: 'ยืนยันออเดอร์',
                     },
                     {
                       type: 'postback',
