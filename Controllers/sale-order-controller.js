@@ -309,7 +309,13 @@ export const create = async (req, res) => {
 
     if (!existingOrder) {
       // ถ้าไม่มีออเดอร์ที่ยังไม่ได้ส่งสลิปชำระเงิน ให้สร้างออเดอร์ใหม่
-      Order.create(data).then((doc) => res.status(200).json(doc))
+      Order.create(data).then((doc) => {
+        sendMessageInFacebookLive(existingCustomer.psidFb, doc._id)
+          .then(() => res.status(200).json(doc))
+          .catch(() =>
+            res.status(500).json({ error: 'Failed to send message' })
+          )
+      })
     } else {
       // ตรวจสอบว่าสินค้ารหัสเดิมมีอยู่ในออเดอร์แล้วหรือไม่
       let existingProduct = existingOrder.orders.find(
