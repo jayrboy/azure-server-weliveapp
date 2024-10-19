@@ -340,12 +340,12 @@ export const sendMessageInFacebookLive = async (psid, orderID) => {
     console.log('Sending message for the latest order item')
 
     // ส่งข้อความไปยังผู้ใช้ผ่าน Messenger API
-    await axios.post(
-      `https://graph.facebook.com/v21.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`,
-      response
-    )
-
-    console.log('Message sent successfully')
+    await axios
+      .post(
+        `https://graph.facebook.com/v21.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`,
+        response
+      )
+      .then(() => console.log('Message sent successfully'))
   } catch (error) {
     console.error('Error sending message:', error.message)
   }

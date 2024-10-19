@@ -259,9 +259,17 @@ export const create = async (req, res) => {
         psidFb: '',
       }
       Customer.create(customer)
+    } else {
+      let customer = {
+        idFb: form.idFb || '',
+        picture_profile: form.picture_profile || '',
+      }
+      existingCustomer = await Customer.findByIdAndUpdate(
+        existingCustomer._id,
+        customer,
+        { useFindAndModify: false }
+      )
     }
-
-    // console.log('Customer Existed :', existingCustomer) // null
 
     // สร้างข้อมูลออเดอร์เริ่มต้น
     let data = {
@@ -290,8 +298,6 @@ export const create = async (req, res) => {
       psidFb: existingCustomer.psidFb || '',
     }
 
-    // console.log('Save Data :', data)
-
     // ค้นหาออเดอร์ที่ยังไม่ไม่ได้ส่งสลิปการชำระเงิน
     let existingOrder = await Order.findOne({
       idFb: form.idFb,
@@ -300,8 +306,6 @@ export const create = async (req, res) => {
       complete: false,
       sended: false,
     }).exec()
-
-    // console.log('Order Existed :', existingOrder) // null
 
     if (!existingOrder) {
       // ถ้าไม่มีออเดอร์ที่ยังไม่ได้ส่งสลิปชำระเงิน ให้สร้างออเดอร์ใหม่
@@ -329,25 +333,12 @@ export const create = async (req, res) => {
         )
       }
 
-      // คืนค่าออเดอร์ที่อัปเดตแล้ว
-      let updatedOrder = await Order.findById(existingOrder._id)
+      //  คืนค่าออเดอร์ที่อัปเดตแล้ว
+      let updatedOrder = await Order.findById(existingOrder._id).exec()
 
       sendMessageInFacebookLive(existingCustomer.psidFb, updatedOrder._id)
-        .then(() => console.log('Sent Success'))
-        .catch((error) => console.log('Chatbot Error :', error))
-
-      return res.status(200).json(updatedOrder)
-
-      // ของเก่าสินค้าเดิม สร้างใหม่ ไม่เพิ่มจำนวน
-      // Order.findOneAndUpdate(
-      //   { idFb: form.idFb },
-      //   { $push: { orders: data.orders[0] } },
-      //   { useFindAndModify: false }
-      // ).then(() => {
-      //   Order.findById(existingOrder._id).then((doc) =>
-      //     res.status(200).json(doc)
-      //   )
-      // })
+        .then(() => res.status(200).json(updatedOrder))
+        .catch(() => res.status(500).json({ error: 'Failed to send message' }))
     }
   } catch (error) {
     // console.error('Error processing request :', error)
