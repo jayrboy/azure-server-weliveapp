@@ -93,6 +93,10 @@ async function handleMessage(sender_psid, received_message) {
         psidFb: userProfile.id || '',
       }
       existingCustomer = await Customer.create(customer) // สร้างลูกค้าใหม่
+    } else {
+      await Customer.findByIdAndUpdate(existingCustomer._id, {
+        psidFb: userProfile.id,
+      })
     }
 
     let userData = {
@@ -102,7 +106,7 @@ async function handleMessage(sender_psid, received_message) {
 
     // ค้นหาออเดอร์ของผู้ใช้ใน MongoDB
     const order = await Order.findOneAndUpdate(
-      { nameFb: userProfile.name }, // ค้นหาเอกสารที่มี nameFb ตรงตามที่กำหนด
+      { nameFb: userProfile.name, isPayment: false }, // ค้นหาเอกสารที่มี nameFb ตรงตามที่กำหนด
       userData, // อัปเดตข้อมูลที่ต้องการ
       { sort: { createdAt: -1 }, new: true } // เรียงลำดับตาม createdAt และคืนค่าเอกสารใหม่
     )
@@ -286,6 +290,10 @@ export const sendMessageInFacebookLive = async (psid, orderID) => {
 
     const { orders, name, tel, address } = order
 
+    if (orders.length === 0) {
+      throw new Error('No orders found')
+    }
+
     // สมมติค่าจัดส่ง
     const shippingCost = 50
 
@@ -295,14 +303,19 @@ export const sendMessageInFacebookLive = async (psid, orderID) => {
       0
     )
 
-    // เตรียมรายละเอียดสินค้า
-    const productDetails = orders
-      .map(
-        (item) =>
-          `[${item.name} x${item.quantity}] = ${item.price * item.quantity} บาท`
-      )
-      .join('\n')
+    // คำนวณตำแหน่งของรายการสินค้าล่าสุด
+    const lastIndex = orders.length - 1
+    const lastItem = orders[lastIndex]
 
+    // ใช้ toLocaleString() เพื่อจัดรูปแบบตัวเลขให้มี comma
+    const formattedPrice = (lastItem.price * lastItem.quantity).toLocaleString()
+    const formattedShippingCost = shippingCost.toLocaleString()
+    const formattedTotalPrice = (totalPrice + shippingCost).toLocaleString()
+
+    // เตรียม subtitle สำหรับรายการสินค้าล่าสุด
+    const subtitle = `[${lastItem.name} x${lastItem.quantity}] = ${formattedPrice} บาท\nค่าจัดส่ง: ${formattedShippingCost} บาท\nยอดรวม: ${formattedTotalPrice} บาท`
+
+    // สร้าง response สำหรับรายการสินค้าล่าสุด
     let response = {
       recipient: { id: psid },
       message: {
@@ -311,9 +324,7 @@ export const sendMessageInFacebookLive = async (psid, orderID) => {
           payload: {
             template_type: 'coupon',
             title: `ออเดอร์จาก Live สด`,
-            subtitle: `สินค้า: ${productDetails}\nค่าจัดส่ง: ${shippingCost} บาท\nยอดรวม: ${
-              totalPrice + shippingCost
-            } บาท`,
+            subtitle, // ใช้ subtitle ของสินค้าล่าสุด
             coupon_url: `https://weliveapp.netlify.app/order/${order._id}`,
             coupon_url_button_title: 'ยืนยันออเดอร์',
             coupon_pre_message: 'ยืนยันการสั่งซื้อของคุณด้านล่าง!',
@@ -324,15 +335,15 @@ export const sendMessageInFacebookLive = async (psid, orderID) => {
       },
     }
 
-    // console.log(response.message.attachment.payload)
-
-    console.log('Message sent successfully')
+    console.log('Sending message for the latest order item')
 
     // ส่งข้อความไปยังผู้ใช้ผ่าน Messenger API
-    return await axios.post(
+    await axios.post(
       `https://graph.facebook.com/v21.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`,
       response
     )
+
+    console.log('Message sent successfully')
   } catch (error) {
     console.error('Error sending message:', error.message)
   }

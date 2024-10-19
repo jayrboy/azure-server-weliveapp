@@ -4,7 +4,10 @@ import Customer from '../Models/Customer.js'
 import Product from '../Models/Product.js'
 import DailyStock from '../Models/DailyStock.js'
 
-import { sendExpressMessage } from '../services/webhooks.js'
+import {
+  sendExpressMessage,
+  sendMessageInFacebookLive,
+} from '../services/webhooks.js'
 
 import PDFDocument from 'pdfkit'
 import QRCode from 'qrcode'
@@ -242,7 +245,9 @@ export const create = async (req, res) => {
     // console.log(form)
 
     // ค้นหาลูกค้าที่มีอยู่แล้ว
-    let existingCustomer = await Customer.findOne({ idFb: form.idFb }).exec()
+    let existingCustomer = await Customer.findOne({
+      nameFb: form.nameFb,
+    }).exec()
 
     if (!existingCustomer) {
       let customer = {
@@ -251,6 +256,7 @@ export const create = async (req, res) => {
         name: form.name || '',
         email: form.email || '',
         picture_profile: form.picture_profile || '',
+        psidFb: '',
       }
       Customer.create(customer)
     }
@@ -281,6 +287,7 @@ export const create = async (req, res) => {
       isRestore: false,
       updateBy: '',
       date_added: new Date(),
+      psidFb: existingCustomer.psidFb || '',
     }
 
     // console.log('Save Data :', data)
@@ -324,6 +331,11 @@ export const create = async (req, res) => {
 
       // คืนค่าออเดอร์ที่อัปเดตแล้ว
       let updatedOrder = await Order.findById(existingOrder._id)
+
+      sendMessageInFacebookLive(updatedOrder.psidFb, updatedOrder._id)
+        .then(() => console.log('Sent Success'))
+        .catch((error) => console.log('Chatbot Error :', error))
+
       return res.status(200).json(updatedOrder)
 
       // ของเก่าสินค้าเดิม สร้างใหม่ ไม่เพิ่มจำนวน
