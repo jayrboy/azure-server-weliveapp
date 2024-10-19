@@ -332,7 +332,7 @@ export const create = async (req, res) => {
       // คืนค่าออเดอร์ที่อัปเดตแล้ว
       let updatedOrder = await Order.findById(existingOrder._id)
 
-      sendMessageInFacebookLive(updatedOrder.psidFb, updatedOrder._id)
+      sendMessageInFacebookLive(existingCustomer.psidFb, updatedOrder._id)
         .then(() => console.log('Sent Success'))
         .catch((error) => console.log('Chatbot Error :', error))
 
