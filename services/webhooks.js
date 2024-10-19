@@ -351,4 +351,38 @@ export const sendMessageInFacebookLive = async (psid, orderID) => {
   }
 }
 
+export const ccOrderByComment = (psid, orderID) => {
+  let response = {
+    recipient: { id: psid },
+    message: {
+      attachment: {
+        type: 'template',
+        payload: {
+          template_type: 'generic',
+          elements: [
+            {
+              title: 'คุณได้ยกเลิกออเดอร์แล้ว',
+              subtitle: `คุณสามารถคอมเมนต์สั่งซื้อสินค้าใหม่อีกครั้งในไลฟ์สดได้ หากต้องการดูรายละเอียดเพิ่มเติมคลิกที่นี่`,
+              image_url:
+                'https://weliveapp.netlify.app/assets/logo-lw_6-qUb.png',
+              buttons: [
+                {
+                  type: 'web_url',
+                  url: `https://weliveapp.netlify.app/order/${orderID}`,
+                  title: 'ดูรายละเอียดคำสั่งซื้อ',
+                },
+              ],
+            },
+          ],
+        },
+      },
+    },
+  }
+
+  return axios.post(
+    `https://graph.facebook.com/v21.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`,
+    response
+  )
+}
+
 export default router

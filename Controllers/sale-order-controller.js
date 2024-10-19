@@ -5,6 +5,7 @@ import Product from '../Models/Product.js'
 import DailyStock from '../Models/DailyStock.js'
 
 import {
+  ccOrderByComment,
   sendExpressMessage,
   sendMessageInFacebookLive,
 } from '../services/webhooks.js'
@@ -714,15 +715,17 @@ export const ccOrder = (req, res) => {
   let form = req.body
   let data = {
     isPayment: false,
-    isDelete: true,
+    isDelete: form.isDelete || true,
   }
 
-  Order.findOneAndUpdate({ idFb: form.idFb }, data, { useFindAndModify: false })
+  Order.findOneAndUpdate({ idFb: form.idFb, isPayment: false }, data, {
+    useFindAndModify: false,
+  })
     .exec()
-    .then(() => {
-      Order.findOne({ idFb: form.idFb })
-        .exec()
-        .then((docs) => res.status(200).json(docs))
+    .then((doc) => {
+      ccOrderByComment(doc.psidFb, doc._id).then(() =>
+        res.status(200).json(doc)
+      )
     })
     .catch((error) => res.status(500).json({ message: error }))
 }
