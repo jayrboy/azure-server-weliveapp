@@ -78,6 +78,11 @@ async function handleMessage(sender_psid, received_message) {
     // ดึงชื่อผู้ใช้จาก PSID
     const userProfile = await getUserProfileName(sender_psid)
 
+    let userData = {
+      psidFb: userProfile.id || '',
+      picture_profile: userProfile.picture || [],
+    }
+
     // ค้นหาลูกค้าที่มีอยู่แล้ว
     let existingCustomer = await Customer.findOne({
       nameFb: userProfile.name,
@@ -92,16 +97,13 @@ async function handleMessage(sender_psid, received_message) {
         picture_profile: userProfile.picture || '',
         psidFb: userProfile.id || '',
       }
-      existingCustomer = await Customer.create(customer) // สร้างลูกค้าใหม่
+      Customer.create(customer) // สร้างลูกค้าใหม่
     } else {
-      await Customer.findByIdAndUpdate(existingCustomer._id, {
-        psidFb: userProfile.id,
-      })
-    }
-
-    let userData = {
-      psidFb: userProfile.id || '',
-      picture_profile: userProfile.picture || [],
+      existingCustomer = await Customer.findByIdAndUpdate(
+        existingCustomer._id,
+        userData,
+        { useFindAndModify: false }
+      )
     }
 
     // ค้นหาออเดอร์ของผู้ใช้ใน MongoDB
