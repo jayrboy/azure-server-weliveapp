@@ -371,7 +371,15 @@ export const getById = (req, res) => {
   let id = req.params.id
   Order.findById(id)
     .exec()
-    .then((docs) => res.json(docs))
+    .then((docs) => {
+      if (!docs) {
+        return res.status(404).json({ message: 'ไม่พบออเดอร์นี้' }) // ถ้าไม่เจอออเดอร์
+      }
+      res.json(docs) // ถ้าเจอออเดอร์
+    })
+    .catch((error) => {
+      res.status(500).json({ message: 'เกิดข้อผิดพลาดในการดึงข้อมูล', error })
+    })
 }
 
 // Update Order V1 "multiple/form-data"
