@@ -165,6 +165,7 @@ router.post('/fb-sdk', async (req, res) => {
  */
 router.post('/fb-page-post', async (req, res) => {
   let { pageId, message, accessToken } = req.body
+
   const postId = await postPageOnToken(pageId, message, accessToken)
 
   res.status(200).json(postId) // "349127668282384_122111581298360332"

@@ -116,19 +116,25 @@ return data.data
 
 //? https://developers.facebook.com/docs/facebook-login/guides/access-tokens (token การเข้าถึง Pages)
 //TODO: (3)
-export const postPageOnToken = async (pageId, message, userToken) => {
-  const response = await fetch(
-    `${FACEBOOK_GRAPH_API}/${pageId}/feed?message=${message}&access_token=${userToken}`,
-    { method: 'POST', headers: { 'Content-Type': 'application/json' } }
-  )
+export const postPageOnToken = async (pageId, message, userAccessToken) => {
+  try {
+    const url = `${FACEBOOK_GRAPH_API}/${pageId}/feed?message=${encodeURIComponent(
+      message
+    )}&access_token=${userAccessToken}`
 
-  const data = await response.json()
+    const response = await fetch(url, { method: 'POST' })
+    const data = await response.json()
 
-  if (response.ok) {
-    return data.id
+    if (response.ok) {
+      console.log('โพสต์สำเร็จ:', data)
+      return data.id
+    } else {
+      console.error('เกิดข้อผิดพลาด:', data.error)
+      throw data.error
+    }
+  } catch (error) {
+    console.error('ข้อผิดพลาดจากการโพสต์:', error)
   }
-
-  throw new Error('Post page failed')
 }
 
 //? https://developers.facebook.com/docs/live-video-api/ (API วิดีโอถ่ายทอดสด)
